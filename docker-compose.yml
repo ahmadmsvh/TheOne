@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   # Database Services
   postgres:
@@ -77,8 +75,8 @@ services:
   # Application Services
   auth-service:
     build:
-      context: ./auth-service
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: ./auth-service/Dockerfile
     container_name: auth-service
     ports:
       - "8001:8001"
@@ -90,16 +88,14 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
-    volumes:
-      - ./auth-service:/app
     networks:
       - theone-network
     restart: unless-stopped
 
   notification-service:
     build:
-      context: ./notification-service
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: ./notification-service/Dockerfile
     container_name: notification-service
     ports:
       - "5002:5002"
@@ -111,16 +107,14 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
-    volumes:
-      - ./notification-service:/app
     networks:
       - theone-network
     restart: unless-stopped
 
   product-service:
     build:
-      context: ./product-service
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: ./product-service/Dockerfile
     container_name: product-service
     ports:
       - "5001:5001"
@@ -135,16 +129,14 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
-    volumes:
-      - ./product-service:/app
     networks:
       - theone-network
     restart: unless-stopped
 
   order-service:
     build:
-      context: ./order-service
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: ./order-service/Dockerfile
     container_name: order-service
     ports:
       - "8002:8002"
@@ -159,8 +151,6 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
-    volumes:
-      - ./order-service:/app
     networks:
       - theone-network
     restart: unless-stopped

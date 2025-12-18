@@ -2,11 +2,15 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
-COPY requirements.txt .
+COPY notification-service/requirements.txt ./requirements.txt
 
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY main.py .
+COPY shared /app/shared
+RUN pip install --no-cache-dir -e /app/shared
+
+COPY notification-service .
+
 
 EXPOSE 5002
 

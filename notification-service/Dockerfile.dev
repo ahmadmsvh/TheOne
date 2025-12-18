@@ -2,17 +2,18 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
-COPY product-service/requirements.txt ./requirements.txt
+COPY notification-service/requirements.txt ./requirements.txt
 
 RUN pip install --no-cache-dir -r requirements.txt
 
 COPY shared /app/shared
 RUN pip install --no-cache-dir -e /app/shared
 
-COPY product-service .
+RUN rm -rf ./shared ./requirements
 
 
-EXPOSE 5001
+EXPOSE 5002
 
 CMD ["python", "main.py"]
+
 

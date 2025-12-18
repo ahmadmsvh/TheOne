@@ -1,10 +1,7 @@
-from fastapi import FastAPI
-
-app = FastAPI()
-
-@app.get("/")
-def read_root():
-    return {"message": "auth-service"}
+"""
+Main entry point for auth-service
+"""
+from app.main import app
 
 if __name__ == "__main__":
     import uvicorn

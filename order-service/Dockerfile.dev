@@ -9,7 +9,8 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY shared /app/shared
 RUN pip install --no-cache-dir -e /app/shared
 
-COPY order-service .
+RUN rm -rf ./shared ./requirements
+
 
 EXPOSE 8002
 

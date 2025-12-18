@@ -1,0 +1,141 @@
+"""
+Structured JSON logging configuration
+"""
+import logging
+import sys
+import json
+from datetime import datetime
+from typing import Any, Dict
+from pythonjsonlogger import jsonlogger
+
+
+class CustomJsonFormatter(jsonlogger.JsonFormatter):
+    """Custom JSON formatter with additional fields"""
+    
+    def add_fields(self, log_record: Dict[str, Any], record: logging.LogRecord, message_dict: Dict[str, Any]):
+        """Add custom fields to log record"""
+        super().add_fields(log_record, record, message_dict)
+        
+        # Add timestamp in ISO format
+        log_record['timestamp'] = datetime.utcnow().isoformat()
+        
+        # Add log level
+        log_record['level'] = record.levelname
+        
+        # Add logger name
+        log_record['logger'] = record.name
+        
+        # Add process info
+        log_record['pid'] = record.process
+        
+        # Add exception info if present
+        if record.exc_info:
+            log_record['exception'] = self.formatException(record.exc_info)
+        
+        # Add extra fields from record
+        if hasattr(record, 'service_name'):
+            log_record['service'] = record.service_name
+        if hasattr(record, 'request_id'):
+            log_record['request_id'] = record.request_id
+        if hasattr(record, 'user_id'):
+            log_record['user_id'] = record.user_id
+
+
+def setup_logging(
+    service_name: str = "unknown",
+    log_level: str = "INFO",
+    json_output: bool = True,
+    log_file: str = None
+):
+    """
+    Setup structured logging configuration
+    
+    Args:
+        service_name: Name of the service
+        log_level: Logging level (DEBUG, INFO, WARNING, ERROR, CRITICAL)
+        json_output: Whether to use JSON formatting
+        log_file: Optional log file path
+    """
+    # Remove existing handlers
+    root_logger = logging.getLogger()
+    root_logger.handlers = []
+    
+    # Set log level
+    level = getattr(logging, log_level.upper(), logging.INFO)
+    root_logger.setLevel(level)
+    
+    # Create formatter
+    if json_output:
+        formatter = CustomJsonFormatter(
+            '%(timestamp)s %(level)s %(name)s %(message)s',
+            timestamp=True
+        )
+    else:
+        formatter = logging.Formatter(
+            '%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+            datefmt='%Y-%m-%d %H:%M:%S'
+        )
+    
+    # Console handler
+    console_handler = logging.StreamHandler(sys.stdout)
+    console_handler.setLevel(level)
+    console_handler.setFormatter(formatter)
+    root_logger.addHandler(console_handler)
+    
+    # File handler (if specified)
+    if log_file:
+        file_handler = logging.FileHandler(log_file)
+        file_handler.setLevel(level)
+        file_handler.setFormatter(formatter)
+        root_logger.addHandler(file_handler)
+    
+    # Set service name as default attribute
+    for handler in root_logger.handlers:
+        handler.addFilter(ServiceNameFilter(service_name))
+    
+    # Configure third-party loggers
+    logging.getLogger("pika").setLevel(logging.WARNING)
+    logging.getLogger("urllib3").setLevel(logging.WARNING)
+    logging.getLogger("psycopg2").setLevel(logging.WARNING)
+    
+    logging.info(f"Logging configured for service: {service_name}", extra={"service_name": service_name})
+
+
+class ServiceNameFilter(logging.Filter):
+    """Filter to add service name to log records"""
+    
+    def __init__(self, service_name: str):
+        super().__init__()
+        self.service_name = service_name
+    
+    def filter(self, record: logging.LogRecord) -> bool:
+        record.service_name = self.service_name
+        return True
+
+
+def get_logger(name: str, service_name: str = None) -> logging.Logger:
+    """
+    Get a logger instance with service name
+    
+    Args:
+        name: Logger name
+        service_name: Optional service name override
+    
+    Returns:
+        Logger instance
+    """
+    logger = logging.getLogger(name)
+    if service_name:
+        for handler in logger.handlers:
+            handler.addFilter(ServiceNameFilter(service_name))
+    return logger
+
+
+class RequestContextFilter(logging.Filter):
+    """Filter to add request context to log records"""
+    
+    def filter(self, record: logging.LogRecord) -> bool:
+        # This can be extended to extract request context from thread-local storage
+        # For now, it's a placeholder for future enhancement
+        return True
+
