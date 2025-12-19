@@ -25,12 +25,7 @@ class DatabaseManager:
     """SQLAlchemy database connection manager with connection pooling"""
     
     def __init__(self, database_url: Optional[str] = None):
-        """
-        Initialize database manager
-        
-        Args:
-            database_url: Optional database URL. If not provided, uses settings.
-        """
+
         self.settings = get_settings()
         self.database_url = database_url or self.settings.database.url
         self._engine: Optional[Engine] = None
@@ -109,15 +104,7 @@ class DatabaseManager:
     
     @contextmanager
     def get_session_context(self):
-        """
-        Context manager for database session with automatic rollback on error
-        
-        Usage:
-            with db_manager.get_session_context() as session:
-                user = User(email="test@example.com")
-                session.add(user)
-                session.commit()
-        """
+
         session = self.get_session()
         try:
             yield session
@@ -130,12 +117,7 @@ class DatabaseManager:
             session.close()
     
     def health_check(self) -> bool:
-        """
-        Check database connection health
-        
-        Returns:
-            True if connection is healthy, False otherwise
-        """
+
         try:
             with self.engine.connect() as conn:
                 result = conn.execute(text("SELECT 1"))
@@ -147,12 +129,7 @@ class DatabaseManager:
             return False
     
     def get_pool_status(self) -> dict:
-        """
-        Get connection pool status
-        
-        Returns:
-            Dictionary with pool statistics
-        """
+
         pool = self.engine.pool
         return {
             "size": pool.size(),
@@ -202,14 +179,7 @@ def get_db_manager() -> DatabaseManager:
 
 
 def get_db() -> Generator[Session, None, None]:
-    """
-    FastAPI dependency function to get database session
-    
-    Usage in FastAPI:
-        @app.get("/users")
-        def get_users(db: Session = Depends(get_db)):
-            return db.query(User).all()
-    """
+
     db_manager = get_db_manager()
     session = db_manager.get_session()
     try:

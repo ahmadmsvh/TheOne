@@ -24,15 +24,7 @@ REFRESH_TOKEN_EXPIRE_DAYS = 7  # 7 days
 
 
 def hash_password(password: str) -> str:
-    """
-    Hash a password using bcrypt
-    
-    Args:
-        password: Plain text password
-        
-    Returns:
-        Hashed password as string
-    """
+
     try:
         # Generate salt and hash password
         salt = bcrypt.gensalt(rounds=12)  # 12 rounds is a good balance between security and performance
@@ -44,16 +36,7 @@ def hash_password(password: str) -> str:
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
-    """
-    Verify a password against its hash
-    
-    Args:
-        plain_password: Plain text password to verify
-        hashed_password: Hashed password to compare against
-        
-    Returns:
-        True if password matches, False otherwise
-    """
+
     try:
         return bcrypt.checkpw(
             plain_password.encode("utf-8"),
@@ -65,15 +48,7 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
 
 
 def create_access_token(data: Dict[str, Any]) -> str:
-    """
-    Create a JWT access token
-    
-    Args:
-        data: Dictionary containing token payload (typically user_id, email, etc.)
-        
-    Returns:
-        Encoded JWT access token string
-    """
+
     try:
         to_encode = data.copy()
         expire = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
@@ -86,15 +61,7 @@ def create_access_token(data: Dict[str, Any]) -> str:
 
 
 def create_refresh_token(data: Dict[str, Any]) -> str:
-    """
-    Create a JWT refresh token
-    
-    Args:
-        data: Dictionary containing token payload (typically user_id, email, etc.)
-        
-    Returns:
-        Encoded JWT refresh token string
-    """
+
     try:
         to_encode = data.copy()
         expire = datetime.utcnow() + timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS)
@@ -107,15 +74,7 @@ def create_refresh_token(data: Dict[str, Any]) -> str:
 
 
 def decode_token(token: str) -> Optional[Dict[str, Any]]:
-    """
-    Decode and verify a JWT token
-    
-    Args:
-        token: JWT token string to decode
-        
-    Returns:
-        Decoded token payload dictionary or None if invalid
-    """
+
     try:
         payload = jwt.decode(token, JWT_SECRET_KEY, algorithms=[JWT_ALGORITHM])
         return payload

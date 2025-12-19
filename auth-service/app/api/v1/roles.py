@@ -1,6 +1,3 @@
-"""
-Role management API endpoints (Admin only)
-"""
 from fastapi import APIRouter, HTTPException, status, Depends
 from sqlalchemy.orm import Session
 import sys
@@ -44,14 +41,6 @@ def create_role(
     _: None = Depends(require_role("Admin")),
     db: Session = Depends(get_db)
 ):
-    """
-    Create a new role (Admin only)
-    
-    - **name**: Role name (must be unique)
-    - **description**: Optional role description
-    
-    Returns the created role information.
-    """
     role_service = RoleService(db)
     new_role = role_service.create_role(role_data)
     
@@ -79,11 +68,6 @@ def list_roles(
     _: None = Depends(require_role("Admin")),
     db: Session = Depends(get_db)
 ):
-    """
-    List all roles (Admin only)
-    
-    Returns a list of all roles in the system.
-    """
     role_service = RoleService(db)
     roles = role_service.get_all_roles()
     

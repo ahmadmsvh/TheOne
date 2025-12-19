@@ -1,6 +1,3 @@
-"""
-API v1 endpoints
-"""
 from fastapi import APIRouter
 
 from app.api.v1 import auth, health, roles, users

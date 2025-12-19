@@ -1,6 +1,3 @@
-"""
-User role management API endpoints (Admin only)
-"""
 from fastapi import APIRouter, HTTPException, status, Depends
 from sqlalchemy.orm import Session
 from uuid import UUID
@@ -48,14 +45,6 @@ def assign_role_to_user(
     _: None = Depends(require_role("Admin")),
     db: Session = Depends(get_db)
 ):
-    """
-    Assign a role to a user (Admin only)
-    
-    - **user_id**: User UUID
-    - **role_id**: Role ID to assign
-    
-    Returns the updated user information with the assigned role.
-    """
     role_service = RoleService(db)
     user_service = UserService(db)
     
@@ -93,14 +82,6 @@ def remove_role_from_user(
     _: None = Depends(require_role("Admin")),
     db: Session = Depends(get_db)
 ):
-    """
-    Remove a role from a user (Admin only)
-    
-    - **user_id**: User UUID
-    - **role_id**: Role ID to remove
-    
-    Returns the updated user information.
-    """
     role_service = RoleService(db)
     user_service = UserService(db)
     

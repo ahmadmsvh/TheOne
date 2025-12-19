@@ -54,31 +54,11 @@ class UserRepository:
         return self.db.query(User).filter(User.email == email).first()
     
     def email_exists(self, email: str) -> bool:
-        """
-        Check if email already exists
-        
-        Args:
-            email: Email address to check
-            
-        Returns:
-            True if email exists, False otherwise
-        """
+
         return self.db.query(User).filter(User.email == email).first() is not None
     
     def create(self, email: str, password_hash: str) -> User:
-        """
-        Create a new user
-        
-        Args:
-            email: User email address
-            password_hash: Hashed password
-            
-        Returns:
-            Created User object
-            
-        Raises:
-            IntegrityError: If email already exists
-        """
+
         try:
             new_user = User(
                 email=email,
@@ -95,30 +75,14 @@ class UserRepository:
             raise
     
     def update(self, user: User) -> User:
-        """
-        Update user
-        
-        Args:
-            user: User object to update
-            
-        Returns:
-            Updated User object
-        """
+
         self.db.commit()
         self.db.refresh(user)
         logger.info(f"User updated: {user.email} (ID: {user.id})")
         return user
     
     def delete(self, user_id: UUID) -> bool:
-        """
-        Delete user by ID
-        
-        Args:
-            user_id: User UUID
-            
-        Returns:
-            True if deleted, False if not found
-        """
+
         user = self.get_by_id(user_id)
         if user:
             self.db.delete(user)

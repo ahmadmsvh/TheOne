@@ -170,15 +170,7 @@ class RoleRepository:
         return False
     
     def get_user_roles(self, user_id: UUID) -> List[Role]:
-        """
-        Get all roles for a user
-        
-        Args:
-            user_id: User UUID
-            
-        Returns:
-            List of Role objects assigned to the user
-        """
+
         user = self.db.query(User).filter(User.id == user_id).first()
         if user:
             return user.roles

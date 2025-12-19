@@ -1,6 +1,3 @@
-"""
-Authentication API endpoints
-"""
 from fastapi import APIRouter, HTTPException, status, Depends
 from sqlalchemy.orm import Session
 from uuid import UUID
@@ -48,14 +45,6 @@ def register_user(
     user_data: UserRegisterRequest,
     db: Session = Depends(get_db)
 ):
-    """
-    Register a new user
-    
-    - **email**: User's email address (must be unique)
-    - **password**: User's password (min 8 characters, must contain uppercase, lowercase, and digit)
-    
-    Returns the created user information.
-    """
     user_service = UserService(db)
     new_user = user_service.register_user(user_data)
     
@@ -79,15 +68,6 @@ def login(
     login_data: LoginRequest,
     db: Session = Depends(get_db)
 ):
-    """
-    Authenticate user and generate JWT tokens
-    
-    - **email**: User's email address
-    - **password**: User's password
-    
-    Returns access token (15 minutes expiry) and refresh token (7 days expiry).
-    Refresh token is stored in the database for persistence and validation.
-    """
     user_service = UserService(db)
     
     # Authenticate user credentials
@@ -153,13 +133,6 @@ def refresh_token(
     refresh_data: RefreshTokenRequest,
     db: Session = Depends(get_db)
 ):
-    """
-    Refresh access token using a valid refresh token
-    
-    - **refresh_token**: Valid JWT refresh token
-    
-    Returns a new access token. The refresh token must be valid and exist in the database.
-    """
     try:
         # Decode and verify the refresh token
         payload = decode_token(refresh_data.refresh_token)
@@ -255,14 +228,6 @@ def logout(
     logout_data: LogoutRequest,
     db: Session = Depends(get_db)
 ):
-    """
-    Logout user by invalidating refresh token
-    
-    - **refresh_token**: JWT refresh token to invalidate
-    
-    Revokes the refresh token in the database, effectively logging out the user.
-    Always returns success to avoid information leakage about token validity.
-    """
     try:
         # Decode the refresh token to get user information
         payload = decode_token(logout_data.refresh_token)

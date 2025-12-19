@@ -1,6 +1,3 @@
-"""
-Pydantic schemas for request/response validation
-"""
 from datetime import datetime
 from typing import Optional
 from uuid import UUID

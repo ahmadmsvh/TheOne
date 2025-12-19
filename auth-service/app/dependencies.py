@@ -1,6 +1,3 @@
-"""
-FastAPI dependencies
-"""
 from typing import Generator, List, Optional
 from uuid import UUID
 from fastapi import Depends, HTTPException, status
@@ -24,14 +21,7 @@ security = HTTPBearer()
 
 
 def get_user_service(db: Session = None) -> Generator[UserService, None, None]:
-    """
-    Dependency to get user service instance
-    
-    Usage:
-        @app.post("/register")
-        def register(user_service: UserService = Depends(get_user_service)):
-            ...
-    """
+
     if db is None:
         # Get db from dependency if not provided
         db_gen = get_db()
@@ -48,19 +38,7 @@ async def require_auth(
     credentials: HTTPAuthorizationCredentials = Depends(security),
     db: Session = Depends(get_db)
 ) -> User:
-    """
-    Dependency to require authentication and return current user
-    
-    Validates JWT token and returns the authenticated user.
-    
-    Usage:
-        @app.get("/protected")
-        def protected_route(current_user: User = Depends(require_auth)):
-            ...
-    
-    Raises:
-        HTTPException: If token is invalid, expired, or user not found
-    """
+
     token = credentials.credentials
     
     # Decode and verify token
@@ -117,30 +95,9 @@ async def require_auth(
 
 
 def require_role(role_name: str):
-    """
-    Dependency factory to require a specific role
-    
-    Usage:
-        @app.post("/admin-only")
-        def admin_route(
-            current_user: User = Depends(require_auth),
-            _: None = Depends(require_role("Admin"))
-        ):
-            ...
-    
-    Args:
-        role_name: Name of the required role
-        
-    Returns:
-        Dependency function that checks if user has the required role
-    """
+
     async def role_checker(current_user: User = Depends(require_auth)) -> None:
-        """
-        Check if current user has the required role
-        
-        Raises:
-            HTTPException: If user doesn't have the required role
-        """
+
         user_roles = [role.name for role in current_user.roles]
         if role_name not in user_roles:
             logger.warning(
@@ -157,30 +114,9 @@ def require_role(role_name: str):
 
 
 def require_any_role(*role_names: str):
-    """
-    Dependency factory to require any of the specified roles
-    
-    Usage:
-        @app.post("/vendor-or-admin")
-        def vendor_or_admin_route(
-            current_user: User = Depends(require_auth),
-            _: None = Depends(require_any_role("Vendor", "Admin"))
-        ):
-            ...
-    
-    Args:
-        *role_names: Names of roles (user must have at least one)
-        
-    Returns:
-        Dependency function that checks if user has any of the required roles
-    """
+
     async def any_role_checker(current_user: User = Depends(require_auth)) -> None:
-        """
-        Check if current user has any of the required roles
-        
-        Raises:
-            HTTPException: If user doesn't have any of the required roles
-        """
+
         user_roles = [role.name for role in current_user.roles]
         if not any(role_name in user_roles for role_name in role_names):
             logger.warning(

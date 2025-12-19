@@ -1,6 +1,3 @@
-"""
-Refresh token repository for database operations
-"""
 from typing import Optional
 from uuid import UUID
 from datetime import datetime
@@ -22,53 +19,19 @@ class RefreshTokenRepository:
     """Repository for refresh token database operations"""
     
     def __init__(self, db: Session):
-        """
-        Initialize refresh token repository
-        
-        Args:
-            db: Database session
-        """
+
         self.db = db
     
     def get_by_token(self, token: str) -> Optional[RefreshToken]:
-        """
-        Get refresh token by token string
-        
-        Args:
-            token: Refresh token string
-            
-        Returns:
-            RefreshToken object or None if not found
-        """
+
         return self.db.query(RefreshToken).filter(RefreshToken.token == token).first()
     
     def get_by_user_id(self, user_id: UUID) -> list[RefreshToken]:
-        """
-        Get all refresh tokens for a user
-        
-        Args:
-            user_id: User UUID
-            
-        Returns:
-            List of RefreshToken objects
-        """
+
         return self.db.query(RefreshToken).filter(RefreshToken.user_id == user_id).all()
     
     def create(self, token: str, user_id: UUID, expires_at: datetime) -> RefreshToken:
-        """
-        Create a new refresh token
-        
-        Args:
-            token: Refresh token string
-            user_id: User UUID
-            expires_at: Token expiration datetime
-            
-        Returns:
-            Created RefreshToken object
-            
-        Raises:
-            IntegrityError: If token already exists
-        """
+
         try:
             new_token = RefreshToken(
                 token=token,
@@ -87,15 +50,7 @@ class RefreshTokenRepository:
             raise
     
     def revoke(self, token: str) -> bool:
-        """
-        Revoke a refresh token by setting revoked flag
-        
-        Args:
-            token: Refresh token string
-            
-        Returns:
-            True if revoked, False if not found
-        """
+
         refresh_token = self.get_by_token(token)
         if refresh_token:
             refresh_token.revoked = True
@@ -105,15 +60,7 @@ class RefreshTokenRepository:
         return False
     
     def revoke_all_for_user(self, user_id: UUID) -> int:
-        """
-        Revoke all refresh tokens for a user
-        
-        Args:
-            user_id: User UUID
-            
-        Returns:
-            Number of tokens revoked
-        """
+
         tokens = self.get_by_user_id(user_id)
         count = 0
         for token in tokens:
@@ -126,15 +73,7 @@ class RefreshTokenRepository:
         return count
     
     def delete(self, token: str) -> bool:
-        """
-        Delete refresh token by token string
-        
-        Args:
-            token: Refresh token string
-            
-        Returns:
-            True if deleted, False if not found
-        """
+
         refresh_token = self.get_by_token(token)
         if refresh_token:
             self.db.delete(refresh_token)
@@ -144,15 +83,7 @@ class RefreshTokenRepository:
         return False
     
     def is_valid(self, token: str) -> bool:
-        """
-        Check if refresh token is valid (exists, not revoked, not expired)
-        
-        Args:
-            token: Refresh token string
-            
-        Returns:
-            True if valid, False otherwise
-        """
+
         refresh_token = self.get_by_token(token)
         if refresh_token:
             return refresh_token.is_valid()

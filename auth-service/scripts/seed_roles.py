@@ -1,6 +1,3 @@
-"""
-Seed script to create initial roles: Customer, Vendor, Admin
-"""
 import sys
 from pathlib import Path
 

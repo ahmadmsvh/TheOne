@@ -1,6 +1,3 @@
-"""
-User service for business logic
-"""
 from typing import Optional
 from uuid import UUID
 from sqlalchemy.orm import Session
@@ -22,15 +19,9 @@ logger = get_logger(__name__, "auth-service")
 
 
 class UserService:
-    """Service for user business logic"""
     
     def __init__(self, db: Session):
-        """
-        Initialize user service
-        
-        Args:
-            db: Database session
-        """
+
         self.db = db
         self.user_repository = UserRepository(db)
     
@@ -111,16 +102,7 @@ class UserService:
         return self.user_repository.get_by_email(email)
     
     def authenticate_user(self, email: str, password: str) -> Optional[User]:
-        """
-        Authenticate a user by email and password
-        
-        Args:
-            email: User email address
-            password: Plain text password
-            
-        Returns:
-            User object if credentials are valid, None otherwise
-        """
+
         user = self.get_user_by_email(email)
         if not user:
             logger.warning(f"Login attempt with non-existent email: {email}")
@@ -134,15 +116,7 @@ class UserService:
         return user
     
     def user_to_response(self, user: User) -> UserResponse:
-        """
-        Convert User model to UserResponse schema
-        
-        Args:
-            user: User model object
-            
-        Returns:
-            UserResponse schema object
-        """
+
         return UserResponse(
             id=user.id,
             email=user.email,
