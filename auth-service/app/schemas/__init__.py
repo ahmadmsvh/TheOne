@@ -5,7 +5,7 @@ from pydantic import BaseModel, EmailStr, Field, field_validator, ConfigDict
 
 
 class UserRegisterRequest(BaseModel):
-    """User registration request schema"""
+
     model_config = ConfigDict(
         json_schema_extra={
             "example": {
@@ -103,7 +103,7 @@ class RefreshTokenRequest(BaseModel):
         }
     )
     
-    refresh_token: str = Field(..., description="JWT refresh token")
+    refresh_token: str = Field(..., min_length=1, description="JWT refresh token")
 
 
 class RefreshTokenResponse(BaseModel):
@@ -123,7 +123,7 @@ class LogoutRequest(BaseModel):
         }
     )
     
-    refresh_token: str = Field(..., description="JWT refresh token to invalidate")
+    refresh_token: str = Field(..., min_length=1, description="JWT refresh token to invalidate")
 
 
 class LogoutResponse(BaseModel):

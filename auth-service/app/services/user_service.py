@@ -26,18 +26,6 @@ class UserService:
         self.user_repository = UserRepository(db)
     
     def register_user(self, user_data: UserRegisterRequest) -> User:
-        """
-        Register a new user
-        
-        Args:
-            user_data: User registration request data
-            
-        Returns:
-            Created User object
-            
-        Raises:
-            HTTPException: If email already exists or registration fails
-        """
         # Check if email already exists
         if self.user_repository.email_exists(user_data.email):
             logger.warning(f"Registration attempt with existing email: {user_data.email}")
@@ -78,27 +66,11 @@ class UserService:
             )
     
     def get_user_by_id(self, user_id: UUID) -> Optional[User]:
-        """
-        Get user by ID
-        
-        Args:
-            user_id: User UUID
-            
-        Returns:
-            User object or None if not found
-        """
+
         return self.user_repository.get_by_id(user_id)
     
     def get_user_by_email(self, email: str) -> Optional[User]:
-        """
-        Get user by email
-        
-        Args:
-            email: User email address
-            
-        Returns:
-            User object or None if not found
-        """
+
         return self.user_repository.get_by_email(email)
     
     def authenticate_user(self, email: str, password: str) -> Optional[User]:

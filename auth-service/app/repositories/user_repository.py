@@ -18,39 +18,17 @@ logger = get_logger(__name__, "auth-service")
 
 
 class UserRepository:
-    """Repository for user database operations"""
-    
+
     def __init__(self, db: Session):
-        """
-        Initialize user repository
-        
-        Args:
-            db: Database session
-        """
+
         self.db = db
     
     def get_by_id(self, user_id: UUID) -> Optional[User]:
-        """
-        Get user by ID
-        
-        Args:
-            user_id: User UUID
-            
-        Returns:
-            User object or None if not found
-        """
+
         return self.db.query(User).filter(User.id == user_id).first()
     
     def get_by_email(self, email: str) -> Optional[User]:
-        """
-        Get user by email
-        
-        Args:
-            email: User email address
-            
-        Returns:
-            User object or None if not found
-        """
+
         return self.db.query(User).filter(User.email == email).first()
     
     def email_exists(self, email: str) -> bool:
