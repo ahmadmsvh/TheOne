@@ -1,6 +1,3 @@
-"""
-Role service for business logic
-"""
 from typing import Optional, List
 from uuid import UUID
 from sqlalchemy.orm import Session
@@ -25,29 +22,13 @@ class RoleService:
     """Service for role business logic"""
     
     def __init__(self, db: Session):
-        """
-        Initialize role service
-        
-        Args:
-            db: Database session
-        """
+
         self.db = db
         self.role_repository = RoleRepository(db)
         self.user_repository = UserRepository(db)
     
     def create_role(self, role_data: RoleCreateRequest) -> Role:
-        """
-        Create a new role
-        
-        Args:
-            role_data: Role creation request data
-            
-        Returns:
-            Created Role object
-            
-        Raises:
-            HTTPException: If role name already exists
-        """
+
         # Check if role name already exists
         if self.role_repository.get_by_name(role_data.name):
             logger.warning(f"Role creation attempt with existing name: {role_data.name}")
@@ -77,53 +58,19 @@ class RoleService:
             )
     
     def get_role_by_id(self, role_id: int) -> Optional[Role]:
-        """
-        Get role by ID
-        
-        Args:
-            role_id: Role ID
-            
-        Returns:
-            Role object or None if not found
-        """
+
         return self.role_repository.get_by_id(role_id)
     
     def get_role_by_name(self, name: str) -> Optional[Role]:
-        """
-        Get role by name
-        
-        Args:
-            name: Role name
-            
-        Returns:
-            Role object or None if not found
-        """
+
         return self.role_repository.get_by_name(name)
     
     def get_all_roles(self) -> List[Role]:
-        """
-        Get all roles
-        
-        Returns:
-            List of all Role objects
-        """
+
         return self.role_repository.get_all()
     
     def assign_role_to_user(self, user_id: UUID, role_id: int) -> User:
-        """
-        Assign a role to a user
-        
-        Args:
-            user_id: User UUID
-            role_id: Role ID
-            
-        Returns:
-            Updated User object
-            
-        Raises:
-            HTTPException: If user or role not found, or role already assigned
-        """
-        # Verify user exists
+
         user = self.user_repository.get_by_id(user_id)
         if not user:
             logger.warning(f"User not found: {user_id}")
@@ -171,19 +118,7 @@ class RoleService:
             )
     
     def remove_role_from_user(self, user_id: UUID, role_id: int) -> User:
-        """
-        Remove a role from a user
-        
-        Args:
-            user_id: User UUID
-            role_id: Role ID
-            
-        Returns:
-            Updated User object
-            
-        Raises:
-            HTTPException: If user or role not found, or role not assigned
-        """
+
         # Verify user exists
         user = self.user_repository.get_by_id(user_id)
         if not user:
@@ -225,15 +160,7 @@ class RoleService:
         return user
     
     def role_to_response(self, role: Role) -> RoleResponse:
-        """
-        Convert Role model to RoleResponse schema
-        
-        Args:
-            role: Role model object
-            
-        Returns:
-            RoleResponse schema object
-        """
+
         return RoleResponse(
             id=role.id,
             name=role.name,

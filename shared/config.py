@@ -1,13 +1,16 @@
 from typing import Optional
+from pydantic import Field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from functools import lru_cache
+from pathlib import Path
+import os
 
 
 class DatabaseSettings(BaseSettings):
     """PostgreSQL database settings"""
     model_config = SettingsConfigDict(env_prefix="DATABASE_")
     
-    url: str = "postgresql://postgres:postgres@localhost:5432/theone_db"
+    url: str
     pool_size: int = 5
     max_overflow: int = 10
     pool_timeout: int = 30
@@ -17,15 +20,15 @@ class MongoSettings(BaseSettings):
     """MongoDB database settings"""
     model_config = SettingsConfigDict(env_prefix="MONGODB_")
     
-    url: str = "mongodb://admin:admin@localhost:27017/theone_db?authSource=admin"
-    database: str = "theone_db"
+    url: str
+    database: str
 
 
 class RedisSettings(BaseSettings):
     """Redis cache settings"""
     model_config = SettingsConfigDict(env_prefix="REDIS_")
     
-    url: str = "redis://localhost:6379"
+    url: str
     decode_responses: bool = True
     socket_timeout: int = 5
     socket_connect_timeout: int = 5
@@ -35,7 +38,7 @@ class RabbitMQSettings(BaseSettings):
     """RabbitMQ message queue settings"""
     model_config = SettingsConfigDict(env_prefix="RABBITMQ_")
     
-    url: str = "amqp://admin:admin@localhost:5672/"
+    url: str
     exchange: str = "theone_exchange"
     queue_prefix: str = "theone"
     prefetch_count: int = 10
@@ -54,25 +57,48 @@ class AppSettings(BaseSettings):
 
 class Settings(BaseSettings):
     """Main settings class combining all configurations"""
-    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
+    # Use .env file from the shared directory (where this config.py file is located)
+    _env_file = Path(__file__).parent / ".env"
+    model_config = SettingsConfigDict(env_file=str(_env_file), env_file_encoding="utf-8", extra="ignore")
     
-    database: DatabaseSettings = DatabaseSettings()
-    mongodb: MongoSettings = MongoSettings()
-    redis: RedisSettings = RedisSettings()
-    rabbitmq: RabbitMQSettings = RabbitMQSettings()
-    app: AppSettings = AppSettings()
+    database: Optional[DatabaseSettings] = None
+    mongodb: Optional[MongoSettings] = None
+    redis: Optional[RedisSettings] = None
+    rabbitmq: Optional[RabbitMQSettings] = None
+    app: AppSettings = Field(default_factory=AppSettings)
     
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-        # Override with environment variables if provided
-        if "DATABASE_URL" in kwargs:
-            self.database.url = kwargs["DATABASE_URL"]
-        if "MONGODB_URL" in kwargs:
-            self.mongodb.url = kwargs["MONGODB_URL"]
-        if "REDIS_URL" in kwargs:
-            self.redis.url = kwargs["REDIS_URL"]
-        if "RABBITMQ_URL" in kwargs:
-            self.rabbitmq.url = kwargs["RABBITMQ_URL"]
+    @model_validator(mode='after')
+    def create_nested_settings(self):
+        """Create nested settings only if required environment variables are present"""
+        # Create DatabaseSettings if DATABASE_URL is present
+        if os.getenv("DATABASE_URL"):
+            try:
+                self.database = DatabaseSettings()
+            except Exception:
+                pass  # Will be None if required vars are missing
+        
+        # Create MongoSettings if MONGODB_URL and MONGODB_DATABASE are present
+        if os.getenv("MONGODB_URL") and os.getenv("MONGODB_DATABASE"):
+            try:
+                self.mongodb = MongoSettings()
+            except Exception:
+                pass  # Will be None if required vars are missing
+        
+        # Create RedisSettings if REDIS_URL is present
+        if os.getenv("REDIS_URL"):
+            try:
+                self.redis = RedisSettings()
+            except Exception:
+                pass  # Will be None if required vars are missing
+        
+        # Create RabbitMQSettings if RABBITMQ_URL is present
+        if os.getenv("RABBITMQ_URL"):
+            try:
+                self.rabbitmq = RabbitMQSettings()
+            except Exception:
+                pass  # Will be None if required vars are missing
+        
+        return self
 
 
 @lru_cache()

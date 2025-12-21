@@ -183,7 +183,14 @@ def refresh_token(
         
         # Check if refresh token exists and is valid in database
         refresh_token_repo = RefreshTokenRepository(db)
-        if not refresh_token_repo.is_valid(refresh_data.refresh_token):
+        refresh_token_record = refresh_token_repo.get_by_token(refresh_data.refresh_token)
+        
+        if not refresh_token_record or not refresh_token_record.is_valid():
+            # If token exists but is expired, revoke it for cleanup
+            if refresh_token_record and refresh_token_record.is_expired() and not refresh_token_record.revoked:
+                refresh_token_repo.revoke(refresh_data.refresh_token)
+                logger.info(f"Revoked expired refresh token for user: {user_id}")
+            
             logger.warning(f"Refresh token not valid in database for user: {user_id}")
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,

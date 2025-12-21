@@ -1,6 +1,3 @@
-"""
-Role repository for database operations
-"""
 from typing import Optional, List
 from uuid import UUID
 from sqlalchemy.orm import Session
@@ -21,61 +18,23 @@ class RoleRepository:
     """Repository for role database operations"""
     
     def __init__(self, db: Session):
-        """
-        Initialize role repository
-        
-        Args:
-            db: Database session
-        """
+
         self.db = db
     
     def get_by_id(self, role_id: int) -> Optional[Role]:
-        """
-        Get role by ID
-        
-        Args:
-            role_id: Role ID
-            
-        Returns:
-            Role object or None if not found
-        """
+
         return self.db.query(Role).filter(Role.id == role_id).first()
     
     def get_by_name(self, name: str) -> Optional[Role]:
-        """
-        Get role by name
-        
-        Args:
-            name: Role name
-            
-        Returns:
-            Role object or None if not found
-        """
+
         return self.db.query(Role).filter(Role.name == name).first()
     
     def get_all(self) -> List[Role]:
-        """
-        Get all roles
-        
-        Returns:
-            List of all Role objects
-        """
+
         return self.db.query(Role).all()
     
     def create(self, name: str, description: Optional[str] = None) -> Role:
-        """
-        Create a new role
-        
-        Args:
-            name: Role name
-            description: Optional role description
-            
-        Returns:
-            Created Role object
-            
-        Raises:
-            IntegrityError: If role name already exists
-        """
+
         try:
             new_role = Role(
                 name=name,
@@ -92,15 +51,7 @@ class RoleRepository:
             raise
     
     def delete(self, role_id: int) -> bool:
-        """
-        Delete role by ID
-        
-        Args:
-            role_id: Role ID
-            
-        Returns:
-            True if deleted, False if not found
-        """
+   
         role = self.get_by_id(role_id)
         if role:
             self.db.delete(role)
@@ -110,16 +61,7 @@ class RoleRepository:
         return False
     
     def assign_role_to_user(self, user_id: UUID, role_id: int) -> bool:
-        """
-        Assign a role to a user
-        
-        Args:
-            user_id: User UUID
-            role_id: Role ID
-            
-        Returns:
-            True if assigned, False if already assigned
-        """
+
         try:
             # Check if assignment already exists
             existing = self.db.query(UserRole).filter(
@@ -145,16 +87,7 @@ class RoleRepository:
             raise
     
     def remove_role_from_user(self, user_id: str, role_id: int) -> bool:
-        """
-        Remove a role from a user
-        
-        Args:
-            user_id: User UUID
-            role_id: Role ID
-            
-        Returns:
-            True if removed, False if not found
-        """
+
         user_role = self.db.query(UserRole).filter(
             UserRole.user_id == user_id,
             UserRole.role_id == role_id
