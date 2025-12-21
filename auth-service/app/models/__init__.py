@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional
 from uuid import UUID, uuid4
 from sqlalchemy import Column, String, Boolean, Integer, ForeignKey, DateTime, Text
@@ -73,7 +73,7 @@ class RefreshToken(Base):
     
     def is_expired(self) -> bool:
         """Check if token is expired"""
-        return datetime.utcnow() >= self.expires_at
+        return datetime.now(timezone.utc) >= self.expires_at
     
     def is_valid(self) -> bool:
         """Check if token is valid (not expired and not revoked)"""

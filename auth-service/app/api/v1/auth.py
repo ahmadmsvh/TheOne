@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException, status, Depends
 from sqlalchemy.orm import Session
 from uuid import UUID
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import sys
 from pathlib import Path
 
@@ -91,7 +91,7 @@ def login(
         refresh_token = create_refresh_token(token_data)
         
         # Calculate expiration datetime
-        expires_at = datetime.utcnow() + timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS)
+        expires_at = datetime.now(timezone.utc) + timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS)
         
         # Store refresh token in database
         refresh_token_repo = RefreshTokenRepository(db)
@@ -193,7 +193,8 @@ def refresh_token(
         # Generate new access token
         token_data = {
             "sub": str(user.id),
-            "email": user.email
+            "email": user.email,
+            "roles": [role.name for role in user.roles]
         }
         
         new_access_token = create_access_token(token_data)
