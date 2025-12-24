@@ -1,0 +1,211 @@
+"""
+MongoDB models for product-service
+"""
+from datetime import datetime
+from typing import Optional, List, Dict, Any
+from pydantic import BaseModel, Field, ConfigDict, field_validator, model_validator
+from bson import ObjectId
+from enum import Enum
+
+
+class PyObjectId(ObjectId):
+    """Custom ObjectId type for Pydantic v2"""
+    @classmethod
+    def __get_pydantic_core_schema__(cls, source_type, handler):
+        from pydantic_core import core_schema
+        
+        def validate_from_str(value: str) -> ObjectId:
+            if ObjectId.is_valid(value):
+                return ObjectId(value)
+            raise ValueError("Invalid ObjectId")
+        
+        def serialize_to_str(value: ObjectId) -> str:
+            return str(value)
+        
+        return core_schema.json_or_python_schema(
+            json_schema=core_schema.no_info_plain_validator_function(validate_from_str),
+            python_schema=core_schema.union_schema([
+                core_schema.is_instance_schema(ObjectId),
+                core_schema.no_info_plain_validator_function(validate_from_str),
+            ]),
+            serialization=core_schema.plain_serializer_function_ser_schema(
+                serialize_to_str,
+                when_used='json'
+            )
+        )
+    
+    @classmethod
+    def __get_pydantic_json_schema__(cls, field_schema, handler):
+        field_schema.update(type="string", format="objectid")
+
+
+class ProductStatus(str, Enum):
+    """Product status enumeration"""
+    ACTIVE = "active"
+    INACTIVE = "inactive"
+    OUT_OF_STOCK = "out_of_stock"
+    DISCONTINUED = "discontinued"
+    DRAFT = "draft"
+
+
+class ProductCategory(BaseModel):
+    """Product category model"""
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+    
+    id: Optional[str] = Field(None, description="Category ID")
+    name: str = Field(..., description="Category name", min_length=1, max_length=100)
+    slug: Optional[str] = Field(None, description="Category URL slug")
+    parent_id: Optional[str] = Field(None, description="Parent category ID for nested categories")
+
+
+class ProductImage(BaseModel):
+    """Product image model"""
+    url: str = Field(..., description="Image URL")
+    alt_text: Optional[str] = Field(None, description="Image alt text")
+    is_primary: bool = Field(default=False, description="Is this the primary image")
+    order: int = Field(default=0, description="Display order")
+
+
+class ProductVariant(BaseModel):
+    """Product variant model (size, color, etc.)"""
+    name: str = Field(..., description="Variant name (e.g., 'Size', 'Color')")
+    value: str = Field(..., description="Variant value (e.g., 'Large', 'Red')")
+    sku: Optional[str] = Field(None, description="Variant-specific SKU")
+    price_modifier: float = Field(default=0.0, description="Price adjustment for this variant")
+    stock: int = Field(default=0, description="Stock quantity for this variant")
+
+
+class Product(BaseModel):
+    """Product model for MongoDB"""
+    model_config = ConfigDict(
+        arbitrary_types_allowed=True,
+        populate_by_name=True
+    )
+    
+    id: Optional[PyObjectId] = Field(default_factory=ObjectId, alias="_id", description="Product ID")
+    name: str = Field(..., description="Product name", min_length=1, max_length=200)
+    description: Optional[str] = Field(None, description="Product description")
+    sku: Optional[str] = Field(None, description="Stock Keeping Unit (unique identifier)", max_length=100)
+    price: float = Field(..., description="Product price", gt=0)
+    compare_at_price: Optional[float] = Field(None, description="Original price (for discounts)", gt=0)
+    cost_price: Optional[float] = Field(None, description="Cost price (internal)", gt=0)
+    stock: int = Field(default=0, description="Stock quantity", ge=0)
+    status: ProductStatus = Field(default=ProductStatus.DRAFT, description="Product status")
+    category: Optional[str] = Field(None, description="Category ID or name")
+    categories: List[str] = Field(default_factory=list, description="List of category IDs")
+    tags: List[str] = Field(default_factory=list, description="Product tags")
+    images: List[ProductImage] = Field(default_factory=list, description="Product images")
+    variants: List[ProductVariant] = Field(default_factory=list, description="Product variants")
+    weight: Optional[float] = Field(None, description="Product weight (kg)", gt=0)
+    dimensions: Optional[Dict[str, float]] = Field(None, description="Product dimensions (length, width, height)")
+    brand: Optional[str] = Field(None, description="Product brand", max_length=100)
+    vendor: Optional[str] = Field(None, description="Product vendor/supplier", max_length=100)
+    vendor_id: Optional[str] = Field(None, description="Vendor ID (for vendor lookup)", max_length=100)
+    barcode: Optional[str] = Field(None, description="Product barcode", max_length=100)
+    metadata: Dict[str, Any] = Field(default_factory=dict, description="Additional metadata")
+    created_at: datetime = Field(default_factory=datetime.utcnow, description="Creation timestamp")
+    updated_at: datetime = Field(default_factory=datetime.utcnow, description="Last update timestamp")
+    created_by: Optional[str] = Field(None, description="User ID who created the product")
+    updated_by: Optional[str] = Field(None, description="User ID who last updated the product")
+    
+    @field_validator("price", "compare_at_price", "cost_price", mode="before")
+    @classmethod
+    def validate_price(cls, v):
+        """Validate price fields"""
+        if v is not None and v < 0:
+            raise ValueError("Price must be greater than or equal to 0")
+        return v
+    
+    @model_validator(mode="after")
+    def validate_compare_price(self):
+        """Validate compare_at_price is greater than price"""
+        if self.compare_at_price is not None and self.price is not None:
+            if self.compare_at_price <= self.price:
+                raise ValueError("compare_at_price must be greater than price")
+        return self
+
+
+class ProductCreate(BaseModel):
+    """Product creation schema (without ID and timestamps)"""
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+    
+    name: str = Field(..., description="Product name", min_length=1, max_length=200)
+    description: Optional[str] = Field(None, description="Product description")
+    sku: Optional[str] = Field(None, description="Stock Keeping Unit", max_length=100)
+    price: float = Field(..., description="Product price", gt=0)
+    compare_at_price: Optional[float] = Field(None, description="Original price", gt=0)
+    cost_price: Optional[float] = Field(None, description="Cost price", gt=0)
+    stock: int = Field(default=0, description="Stock quantity", ge=0)
+    status: ProductStatus = Field(default=ProductStatus.DRAFT, description="Product status")
+    category: Optional[str] = Field(None, description="Category ID or name")
+    categories: List[str] = Field(default_factory=list, description="List of category IDs")
+    tags: List[str] = Field(default_factory=list, description="Product tags")
+    images: List[ProductImage] = Field(default_factory=list, description="Product images")
+    variants: List[ProductVariant] = Field(default_factory=list, description="Product variants")
+    weight: Optional[float] = Field(None, description="Product weight (kg)", gt=0)
+    dimensions: Optional[Dict[str, float]] = Field(None, description="Product dimensions")
+    brand: Optional[str] = Field(None, description="Product brand", max_length=100)
+    vendor: Optional[str] = Field(None, description="Product vendor", max_length=100)
+    vendor_id: Optional[str] = Field(None, description="Vendor ID (for vendor lookup)", max_length=100)
+    barcode: Optional[str] = Field(None, description="Product barcode", max_length=100)
+    metadata: Dict[str, Any] = Field(default_factory=dict, description="Additional metadata")
+    created_by: Optional[str] = Field(None, description="User ID who created the product")
+
+
+class ProductUpdate(BaseModel):
+    """Product update schema (all fields optional)"""
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+    
+    name: Optional[str] = Field(None, description="Product name", min_length=1, max_length=200)
+    description: Optional[str] = Field(None, description="Product description")
+    sku: Optional[str] = Field(None, description="Stock Keeping Unit", max_length=100)
+    price: Optional[float] = Field(None, description="Product price", gt=0)
+    compare_at_price: Optional[float] = Field(None, description="Original price", gt=0)
+    cost_price: Optional[float] = Field(None, description="Cost price", gt=0)
+    stock: Optional[int] = Field(None, description="Stock quantity", ge=0)
+    status: Optional[ProductStatus] = Field(None, description="Product status")
+    category: Optional[str] = Field(None, description="Category ID or name")
+    categories: Optional[List[str]] = Field(None, description="List of category IDs")
+    tags: Optional[List[str]] = Field(None, description="Product tags")
+    images: Optional[List[ProductImage]] = Field(None, description="Product images")
+    variants: Optional[List[ProductVariant]] = Field(None, description="Product variants")
+    weight: Optional[float] = Field(None, description="Product weight (kg)", gt=0)
+    dimensions: Optional[Dict[str, float]] = Field(None, description="Product dimensions")
+    brand: Optional[str] = Field(None, description="Product brand", max_length=100)
+    vendor: Optional[str] = Field(None, description="Product vendor", max_length=100)
+    vendor_id: Optional[str] = Field(None, description="Vendor ID (for vendor lookup)", max_length=100)
+    barcode: Optional[str] = Field(None, description="Product barcode", max_length=100)
+    metadata: Optional[Dict[str, Any]] = Field(None, description="Additional metadata")
+    updated_by: Optional[str] = Field(None, description="User ID who updated the product")
+
+
+class ProductResponse(BaseModel):
+    """Product response schema"""
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+    
+    id: str = Field(..., description="Product ID", alias="_id")
+    name: str = Field(..., description="Product name")
+    description: Optional[str] = Field(None, description="Product description")
+    sku: Optional[str] = Field(None, description="Stock Keeping Unit")
+    price: float = Field(..., description="Product price")
+    compare_at_price: Optional[float] = Field(None, description="Original price")
+    cost_price: Optional[float] = Field(None, description="Cost price")
+    stock: int = Field(..., description="Stock quantity")
+    status: ProductStatus = Field(..., description="Product status")
+    category: Optional[str] = Field(None, description="Category ID or name")
+    categories: List[str] = Field(default_factory=list, description="List of category IDs")
+    tags: List[str] = Field(default_factory=list, description="Product tags")
+    images: List[ProductImage] = Field(default_factory=list, description="Product images")
+    variants: List[ProductVariant] = Field(default_factory=list, description="Product variants")
+    weight: Optional[float] = Field(None, description="Product weight (kg)")
+    dimensions: Optional[Dict[str, float]] = Field(None, description="Product dimensions")
+    brand: Optional[str] = Field(None, description="Product brand")
+    vendor: Optional[str] = Field(None, description="Product vendor")
+    vendor_id: Optional[str] = Field(None, description="Vendor ID")
+    barcode: Optional[str] = Field(None, description="Product barcode")
+    metadata: Dict[str, Any] = Field(default_factory=dict, description="Additional metadata")
+    created_at: datetime = Field(..., description="Creation timestamp")
+    updated_at: datetime = Field(..., description="Last update timestamp")
+    created_by: Optional[str] = Field(None, description="User ID who created the product")
+    updated_by: Optional[str] = Field(None, description="User ID who last updated the product")
+

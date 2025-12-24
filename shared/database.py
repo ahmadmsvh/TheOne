@@ -6,10 +6,20 @@ from psycopg2 import pool
 from psycopg2.extras import RealDictCursor
 from pymongo import MongoClient
 from pymongo.database import Database
+from pymongo.errors import ConnectionFailure, ServerSelectionTimeoutError
 from redis import Redis
 from redis.exceptions import ConnectionError as RedisConnectionError
 
 from .config import get_settings
+
+# Optional async imports (Motor)
+try:
+    from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorDatabase
+    MOTOR_AVAILABLE = True
+except ImportError:
+    MOTOR_AVAILABLE = False
+    AsyncIOMotorClient = None
+    AsyncIOMotorDatabase = None
 
 logger = logging.getLogger(__name__)
 
@@ -19,6 +29,11 @@ class PostgreSQLConnection:
     
     def __init__(self, connection_url: Optional[str] = None):
         self.settings = get_settings()
+        if self.settings.database is None:
+            raise ValueError(
+                "PostgreSQL settings are not configured. "
+                "Please set DATABASE_URL environment variable."
+            )
         self.connection_url = connection_url or self.settings.database.url
         self._pool: Optional[pool.ThreadedConnectionPool] = None
     
@@ -83,6 +98,12 @@ class MongoDBConnection:
     
     def __init__(self, connection_url: Optional[str] = None):
         self.settings = get_settings()
+        # if self.settings.mongodb is None:
+
+        #     raise ValueError(
+        #         "MongoDB settings are not configured. "
+        #         "Please set MONGODB_URL and MONGODB_DATABASE environment variables."
+        #     )
         self.connection_url = connection_url or self.settings.mongodb.url
         self._client: Optional[MongoClient] = None
         self._database: Optional[Database] = None
@@ -126,11 +147,89 @@ class MongoDBConnection:
             logger.info("MongoDB connection closed")
 
 
+class AsyncMongoDBConnection:
+    """Async MongoDB connection manager using Motor"""
+    
+    def __init__(self, connection_url: Optional[str] = None):
+        if not MOTOR_AVAILABLE:
+            raise ImportError("Motor is not installed. Install it with: pip install motor")
+        self.settings = get_settings()
+        if self.settings.mongodb is None:
+            raise ValueError(
+                "MongoDB settings are not configured. "
+                "Please set MONGODB_URL and MONGODB_DATABASE environment variables."
+            )
+        self.connection_url = connection_url or self.settings.mongodb.url
+        self.database_name = self.settings.mongodb.database
+        self._client: Optional[AsyncIOMotorClient] = None
+        self._database: Optional[AsyncIOMotorDatabase] = None
+    
+    async def connect(self):
+        """Connect to MongoDB"""
+        if self._client is None:
+            try:
+                self._client = AsyncIOMotorClient(
+                    self.connection_url,
+                    serverSelectionTimeoutMS=5000,
+                    maxPoolSize=50,
+                    minPoolSize=10
+                )
+                # Test connection
+                await self._client.admin.command('ping')
+                self._database = self._client[self.database_name]
+                logger.info(f"MongoDB async connection established to database: {self.database_name}")
+            except (ConnectionFailure, ServerSelectionTimeoutError) as e:
+                logger.error(f"Failed to connect to MongoDB: {e}")
+                raise
+            except Exception as e:
+                logger.error(f"Unexpected error connecting to MongoDB: {e}")
+                raise
+    
+    @property
+    def database(self) -> AsyncIOMotorDatabase:
+        """Get database instance"""
+        if self._database is None:
+            raise RuntimeError("Database not connected. Call connect() first.")
+        return self._database
+    
+    @property
+    def client(self) -> AsyncIOMotorClient:
+        """Get MongoDB client"""
+        if self._client is None:
+            raise RuntimeError("Client not connected. Call connect() first.")
+        return self._client
+    
+    async def close(self):
+        """Close MongoDB connection"""
+        if self._client:
+            self._client.close()
+            self._client = None
+            self._database = None
+            logger.info("MongoDB async connection closed")
+    
+    async def health_check(self) -> bool:
+        """Check MongoDB health"""
+        try:
+            if self._client is None:
+                await self.connect()
+            await self._client.admin.command('ping')
+            logger.debug("MongoDB async health check passed")
+            return True
+        except Exception as e:
+            logger.error(f"MongoDB async health check failed: {e}")
+            return False
+
+
 class RedisConnection:
     """Redis connection manager"""
     
     def __init__(self, connection_url: Optional[str] = None):
         self.settings = get_settings()
+        if self.settings.redis is None:
+            raise ValueError(
+                "Redis settings are not configured. "
+                "Please set REDIS_URL environment variable."
+            )
         self.connection_url = connection_url or self.settings.redis.url
         self._client: Optional[Redis] = None
     
@@ -179,6 +278,7 @@ class RedisConnection:
 # Global connection instances (singleton pattern)
 _postgres_connection: Optional[PostgreSQLConnection] = None
 _mongo_connection: Optional[MongoDBConnection] = None
+_async_mongo_connection: Optional[AsyncMongoDBConnection] = None
 _redis_connection: Optional[RedisConnection] = None
 
 
@@ -204,4 +304,12 @@ def get_redis() -> RedisConnection:
     if _redis_connection is None:
         _redis_connection = RedisConnection()
     return _redis_connection
+
+
+def get_async_mongo() -> AsyncMongoDBConnection:
+    """Get async MongoDB connection instance"""
+    global _async_mongo_connection
+    if _async_mongo_connection is None:
+        _async_mongo_connection = AsyncMongoDBConnection()
+    return _async_mongo_connection
 

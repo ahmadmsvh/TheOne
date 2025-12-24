@@ -146,6 +146,7 @@ services:
     environment:
       - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/theone_db
       - MONGODB_URL=mongodb://admin:admin@mongodb:27017/theone_db?authSource=admin
+      - MONGODB_DATABASE=theone_db
       - REDIS_URL=redis://redis:6379
     depends_on:
       postgres:
