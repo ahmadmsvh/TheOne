@@ -108,7 +108,7 @@ services:
       redis:
         condition: service_healthy
     volumes:
-      - ./auth-service:/app
+      - ./auth-service:/app/auth-service
       - ./shared:/app/shared
     networks:
       - theone-network
@@ -130,7 +130,7 @@ services:
       redis:
         condition: service_healthy
     volumes:
-      - ./notification-service:/app
+      - ./notification-service:/app/notification-service
       - ./shared:/app/shared
     networks:
       - theone-network
@@ -156,7 +156,7 @@ services:
       redis:
         condition: service_healthy
     volumes:
-      - ./product-service:/app
+      - ./product-service:/app/product-service
       - ./shared:/app/shared
     networks:
       - theone-network
@@ -181,7 +181,7 @@ services:
       redis:
         condition: service_healthy
     volumes:
-      - ./order-service:/app
+      - ./order-service:/app/order-service
       - ./shared:/app/shared
     networks:
       - theone-network

@@ -4,6 +4,8 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 from functools import lru_cache
 from pathlib import Path
 import os
+from dotenv import load_dotenv
+
 
 
 class DatabaseSettings(BaseSettings):
@@ -51,7 +53,7 @@ class AppSettings(BaseSettings):
     app_name: str = "theone-service"
     environment: str = "development"
     debug: bool = False
-    log_level: str = "INFO"
+    log_level: str = "DEBUG"
     service_name: str = "unknown"
 
 
@@ -59,6 +61,8 @@ class Settings(BaseSettings):
     """Main settings class combining all configurations"""
     # Use .env file from the shared directory (where this config.py file is located)
     _env_file = Path(__file__).parent / ".env"
+    load_dotenv(dotenv_path=_env_file)
+
     model_config = SettingsConfigDict(env_file=str(_env_file), env_file_encoding="utf-8", extra="ignore")
     
     database: Optional[DatabaseSettings] = None
@@ -70,7 +74,7 @@ class Settings(BaseSettings):
     @model_validator(mode='after')
     def create_nested_settings(self):
         """Create nested settings only if required environment variables are present"""
-        # Create DatabaseSettings if DATABASE_URL is present
+
         if os.getenv("DATABASE_URL"):
             try:
                 self.database = DatabaseSettings()

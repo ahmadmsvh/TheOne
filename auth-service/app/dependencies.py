@@ -6,9 +6,6 @@ from sqlalchemy.orm import Session
 import sys
 from pathlib import Path
 
-# Add shared to path
-sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent / "shared"))
-
 from app.core.database import get_db
 from app.core.security import decode_token
 from app.models import User

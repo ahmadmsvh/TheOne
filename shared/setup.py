@@ -2,7 +2,8 @@ from setuptools import setup, find_packages
 import os
 
 requirements = []
-requirements_path = os.path.join(os.path.dirname(__file__), "requirements.txt")
+requirements_path = os.path.join(os.path.dirname(__file__), "shared", "requirements.txt")
+
 if os.path.exists(requirements_path):
     with open(requirements_path, "r", encoding="utf-8") as f:
         requirements = [line.strip() for line in f if line.strip() and not line.startswith("#")]

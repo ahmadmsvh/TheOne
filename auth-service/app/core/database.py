@@ -8,8 +8,6 @@ from typing import Generator, Optional
 import sys
 from pathlib import Path
 
-# Add shared to path
-sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent / "shared"))
 
 from shared.config import get_settings
 from shared.logging_config import get_logger

@@ -6,21 +6,18 @@ from typing import Optional, Dict, Any
 import sys
 from pathlib import Path
 
-# Add shared to path
-sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent / "shared"))
-
 from dotenv import load_dotenv
 from shared.logging_config import get_logger
 
 logger = get_logger(__name__, "auth-service")
 
 # Load .env file from shared directory
-shared_dir = Path(__file__).parent.parent.parent.parent / "shared"
+shared_dir = Path(__file__).parent.parent.parent.parent / "shared"/"shared"
 env_path = shared_dir / ".env"
 load_dotenv(dotenv_path=env_path)
 
 # JWT Configuration
-JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY", "your-secret-key-change-in-production")
+JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY", "your-secret-key-change-in-development")
 JWT_ALGORITHM = os.getenv("JWT_ALGORITHM", "HS256")
 ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "15"))
 REFRESH_TOKEN_EXPIRE_DAYS = int(os.getenv("REFRESH_TOKEN_EXPIRE_DAYS", "7"))
@@ -41,6 +38,7 @@ def hash_password(password: str) -> str:
 def verify_password(plain_password: str, hashed_password: str) -> bool:
 
     try:
+
         return bcrypt.checkpw(
             plain_password.encode("utf-8"),
             hashed_password.encode("utf-8")

@@ -6,8 +6,7 @@ from datetime import datetime
 import sys
 from pathlib import Path
 
-# Add shared to path
-sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent / "shared"))
+
 
 from shared.database import get_redis
 from shared.logging_config import get_logger

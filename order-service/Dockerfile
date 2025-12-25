@@ -2,14 +2,14 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
-COPY order-service/requirements.txt ./requirements.txt
+COPY order-service /app/order-service
 
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir -r order-service/requirements.txt
 
 COPY shared /app/shared
 RUN pip install --no-cache-dir -e /app/shared
 
-COPY order-service .
+WORKDIR /app/order-service
 
 EXPOSE 8002
 
