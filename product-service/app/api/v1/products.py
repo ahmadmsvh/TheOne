@@ -77,7 +77,7 @@ async def list_products():
         # Validate pagination
         if page < 1:
             page = 1
-        if limit < 1 or limit > 100:
+        if limit < 1 or limit > 20:
             limit = 10
         
         # Get database

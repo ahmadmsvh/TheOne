@@ -78,13 +78,6 @@ class RabbitMQPublisher:
         self.settings = get_settings()
     
     def publish(self, message: BaseMessage, routing_key: Optional[str] = None):
-        """
-        Publish a message to RabbitMQ
-        
-        Args:
-            message: Message object to publish
-            routing_key: Optional routing key (defaults to message_type)
-        """
         try:
             channel = self.connection.channel
             routing_key = routing_key or message.message_type.value
@@ -108,14 +101,7 @@ class RabbitMQPublisher:
             raise
     
     def publish_raw(self, message_body: str, routing_key: str, headers: Optional[Dict[str, Any]] = None):
-        """
-        Publish raw message to RabbitMQ
-        
-        Args:
-            message_body: JSON string message body
-            routing_key: Routing key
-            headers: Optional message headers
-        """
+
         try:
             channel = self.connection.channel
             
@@ -178,15 +164,7 @@ class RabbitMQConsumer:
         logger.info(f"Queue {self.queue_name} setup complete with routing keys: {self.routing_keys}")
     
     def process_message(self, ch: BlockingChannel, method, properties, body: bytes):
-        """
-        Process incoming message
-        
-        Args:
-            ch: Channel
-            method: Delivery method
-            properties: Message properties
-            body: Message body
-        """
+
         try:
             message_data = json.loads(body.decode('utf-8'))
             logger.info(f"Received message: {message_data.get('message_id', 'unknown')}")

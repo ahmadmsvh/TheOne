@@ -147,3 +147,88 @@
 2025-12-26 02:35:54 - app.services.session_service - DEBUG - Cached user data for user: 0d911cf9-2282-4785-ab09-874bb951e88e
 2025-12-26 02:35:54 - app.api.v1.auth - INFO - User logged in successfully: ahmadmsvh@gmail.com (ID: 0d911cf9-2282-4785-ab09-874bb951e88e)
 2025-12-26 02:35:54 - app.core.database - DEBUG - Connection returned to pool
+2025-12-26 14:42:13 - root - INFO - Logging configured for service: auth-service
+2025-12-26 14:42:13 - app.core.database - INFO - Database engine created with pool_size=5, max_overflow=10
+2025-12-26 14:42:13 - app.core.database - INFO - Session factory created
+2025-12-26 14:42:13 - root - INFO - Logging configured for service: auth-service
+2025-12-27 01:22:36 - app.core.database - DEBUG - Connection checked out from pool
+2025-12-27 01:22:36 - app.services.user_service - INFO - User authenticated successfully: ahmadmsvh@gmail.com (ID: 0d911cf9-2282-4785-ab09-874bb951e88e)
+2025-12-27 01:22:36 - app.core.database - DEBUG - Connection returned to pool
+2025-12-27 01:22:36 - app.core.database - DEBUG - Connection checked out from pool
+2025-12-27 01:22:36 - app.repositories.refresh_token_repository - INFO - Refresh token created for user: 0d911cf9-2282-4785-ab09-874bb951e88e
+2025-12-27 01:22:36 - shared.database - INFO - Redis connection established successfully
+2025-12-27 01:22:36 - app.services.session_service - DEBUG - Cached user data for user: 0d911cf9-2282-4785-ab09-874bb951e88e
+2025-12-27 01:22:36 - app.api.v1.auth - INFO - User logged in successfully: ahmadmsvh@gmail.com (ID: 0d911cf9-2282-4785-ab09-874bb951e88e)
+2025-12-27 01:22:36 - app.core.database - DEBUG - Connection returned to pool
+2025-12-27 02:43:05 - root - INFO - Logging configured for service: auth-service
+2025-12-27 02:43:05 - app.core.database - INFO - Database engine created with pool_size=5, max_overflow=10
+2025-12-27 02:43:05 - app.core.database - INFO - Session factory created
+2025-12-27 02:43:06 - root - INFO - Logging configured for service: auth-service
+2025-12-27 02:43:39 - app.core.database - DEBUG - Connection checked out from pool
+2025-12-27 02:43:40 - app.services.user_service - INFO - User authenticated successfully: ahmadmsvh@gmail.com (ID: 0d911cf9-2282-4785-ab09-874bb951e88e)
+2025-12-27 02:43:40 - app.core.database - DEBUG - Connection returned to pool
+2025-12-27 02:43:40 - app.core.database - DEBUG - Connection checked out from pool
+2025-12-27 02:43:40 - app.repositories.refresh_token_repository - INFO - Refresh token created for user: 0d911cf9-2282-4785-ab09-874bb951e88e
+2025-12-27 02:43:40 - shared.database - INFO - Redis connection established successfully
+2025-12-27 02:43:40 - app.services.session_service - DEBUG - Cached user data for user: 0d911cf9-2282-4785-ab09-874bb951e88e
+2025-12-27 02:43:40 - app.api.v1.auth - INFO - User logged in successfully: ahmadmsvh@gmail.com (ID: 0d911cf9-2282-4785-ab09-874bb951e88e)
+2025-12-27 02:43:40 - app.core.database - DEBUG - Connection returned to pool
+2025-12-27 04:00:02 - root - INFO - Logging configured for service: auth-service
+2025-12-27 04:00:02 - app.core.database - INFO - Database engine created with pool_size=5, max_overflow=10
+2025-12-27 04:00:02 - app.core.database - INFO - Session factory created
+2025-12-27 04:00:02 - root - INFO - Logging configured for service: auth-service
+2025-12-27 04:00:37 - root - INFO - Logging configured for service: auth-service
+2025-12-27 04:00:37 - app.core.database - INFO - Database engine created with pool_size=5, max_overflow=10
+2025-12-27 04:00:37 - app.core.database - INFO - Session factory created
+2025-12-27 04:00:37 - root - INFO - Logging configured for service: auth-service
+2025-12-27 04:04:13 - app.core.database - DEBUG - Connection checked out from pool
+2025-12-27 04:04:14 - app.services.user_service - INFO - User authenticated successfully: ahmadmsvh@gmail.com (ID: 0d911cf9-2282-4785-ab09-874bb951e88e)
+2025-12-27 04:04:14 - app.core.database - DEBUG - Connection returned to pool
+2025-12-27 04:04:14 - app.core.database - DEBUG - Connection checked out from pool
+2025-12-27 04:04:14 - app.repositories.refresh_token_repository - INFO - Refresh token created for user: 0d911cf9-2282-4785-ab09-874bb951e88e
+2025-12-27 04:04:14 - shared.database - INFO - Redis connection established successfully
+2025-12-27 04:04:14 - app.services.session_service - DEBUG - Cached user data for user: 0d911cf9-2282-4785-ab09-874bb951e88e
+2025-12-27 04:04:14 - app.api.v1.auth - INFO - User logged in successfully: ahmadmsvh@gmail.com (ID: 0d911cf9-2282-4785-ab09-874bb951e88e)
+2025-12-27 04:04:14 - app.core.database - DEBUG - Connection returned to pool
+2025-12-27 04:22:33 - root - INFO - Logging configured for service: auth-service
+2025-12-27 04:22:33 - app.core.database - INFO - Database engine created with pool_size=5, max_overflow=10
+2025-12-27 04:22:33 - app.core.database - INFO - Session factory created
+2025-12-27 04:22:33 - root - INFO - Logging configured for service: auth-service
+2025-12-27 04:22:37 - app.core.database - ERROR - Database error: (psycopg2.OperationalError) connection to server at "localhost" (::1), port 5432 failed: Connection refused
+	Is the server running on that host and accepting TCP/IP connections?
+connection to server at "localhost" (127.0.0.1), port 5432 failed: Connection refused
+	Is the server running on that host and accepting TCP/IP connections?
+
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2025-12-27 04:22:39 - app.core.database - ERROR - Database error: (psycopg2.OperationalError) connection to server at "localhost" (::1), port 5432 failed: Connection refused
+	Is the server running on that host and accepting TCP/IP connections?
+connection to server at "localhost" (127.0.0.1), port 5432 failed: Connection refused
+	Is the server running on that host and accepting TCP/IP connections?
+
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2025-12-27 04:25:02 - root - INFO - Logging configured for service: auth-service
+2025-12-27 04:25:02 - app.core.database - INFO - Database engine created with pool_size=5, max_overflow=10
+2025-12-27 04:25:02 - app.core.database - INFO - Session factory created
+2025-12-27 04:25:02 - root - INFO - Logging configured for service: auth-service
+2025-12-27 04:25:03 - app.core.database - DEBUG - Connection checked out from pool
+2025-12-27 04:25:04 - app.services.user_service - INFO - User authenticated successfully: ahmadmsvh@gmail.com (ID: 0d911cf9-2282-4785-ab09-874bb951e88e)
+2025-12-27 04:25:04 - app.core.database - DEBUG - Connection returned to pool
+2025-12-27 04:25:04 - app.core.database - DEBUG - Connection checked out from pool
+2025-12-27 04:25:04 - app.repositories.refresh_token_repository - INFO - Refresh token created for user: 0d911cf9-2282-4785-ab09-874bb951e88e
+2025-12-27 04:25:04 - shared.database - INFO - Redis connection established successfully
+2025-12-27 04:25:04 - app.services.session_service - DEBUG - Cached user data for user: 0d911cf9-2282-4785-ab09-874bb951e88e
+2025-12-27 04:25:04 - app.api.v1.auth - INFO - User logged in successfully: ahmadmsvh@gmail.com (ID: 0d911cf9-2282-4785-ab09-874bb951e88e)
+2025-12-27 04:25:04 - app.core.database - DEBUG - Connection returned to pool
+2025-12-27 04:32:45 - root - INFO - Logging configured for service: auth-service
+2025-12-27 04:32:45 - app.core.database - INFO - Database engine created with pool_size=5, max_overflow=10
+2025-12-27 04:32:45 - app.core.database - INFO - Session factory created
+2025-12-27 04:32:45 - root - INFO - Logging configured for service: auth-service
+2025-12-27 04:33:07 - app.core.database - DEBUG - Connection checked out from pool
+2025-12-27 04:33:08 - app.services.user_service - INFO - User authenticated successfully: ahmadmsvh@gmail.com (ID: 0d911cf9-2282-4785-ab09-874bb951e88e)
+2025-12-27 04:33:08 - app.core.database - DEBUG - Connection returned to pool
+2025-12-27 04:33:08 - app.core.database - DEBUG - Connection checked out from pool
+2025-12-27 04:33:08 - app.repositories.refresh_token_repository - INFO - Refresh token created for user: 0d911cf9-2282-4785-ab09-874bb951e88e
+2025-12-27 04:33:08 - shared.database - INFO - Redis connection established successfully
+2025-12-27 04:33:08 - app.services.session_service - DEBUG - Cached user data for user: 0d911cf9-2282-4785-ab09-874bb951e88e
+2025-12-27 04:33:08 - app.api.v1.auth - INFO - User logged in successfully: ahmadmsvh@gmail.com (ID: 0d911cf9-2282-4785-ab09-874bb951e88e)
+2025-12-27 04:33:08 - app.core.database - DEBUG - Connection returned to pool

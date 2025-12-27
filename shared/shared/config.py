@@ -10,7 +10,7 @@ from dotenv import load_dotenv
 
 class DatabaseSettings(BaseSettings):
     """PostgreSQL database settings"""
-    model_config = SettingsConfigDict(env_prefix="DATABASE_")
+    model_config = SettingsConfigDict(env_prefix="POSTGRES_")
     
     url: str
     pool_size: int

@@ -8,9 +8,13 @@ class MessageType(str, Enum):
     """Message types for inter-service communication"""
     ORDER_CREATED = "order.created"
     ORDER_UPDATED = "order.updated"
+    ORDER_COMPLETED = "order.completed"
     ORDER_CANCELLED = "order.cancelled"
     PRODUCT_CREATED = "product.created"
     PRODUCT_UPDATED = "product.updated"
+    INVENTORY_UPDATED = "inventory.updated"
+    INVENTORY_RESERVED = "inventory.reserved"
+    INVENTORY_RELEASED = "inventory.released"
     USER_CREATED = "user.created"
     USER_UPDATED = "user.updated"
     NOTIFICATION_SENT = "notification.sent"
@@ -44,6 +48,18 @@ class ProductMessage(BaseMessage):
     price: float = Field(..., description="Product price")
     stock: int = Field(..., description="Product stock quantity")
     category: Optional[str] = Field(None, description="Product category")
+
+
+class InventoryMessage(BaseMessage):
+    """Inventory-related messages"""
+    product_id: str = Field(..., description="Product identifier")
+    sku: Optional[str] = Field(None, description="Product SKU")
+    quantity_change: Optional[int] = Field(None, description="Quantity change (for inventory.updated)")
+    quantity: Optional[int] = Field(None, description="Quantity (for reserved/released)")
+    total_stock: int = Field(..., description="Total stock quantity")
+    reserved_stock: int = Field(..., description="Reserved stock quantity")
+    available_stock: int = Field(..., description="Available stock quantity")
+    order_id: Optional[str] = Field(None, description="Order ID (for reserved/released events)")
 
 
 class UserMessage(BaseMessage):

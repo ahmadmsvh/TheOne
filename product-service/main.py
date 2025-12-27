@@ -4,6 +4,7 @@ import os
 from app.core.database import get_db_manager
 from app.api.v1.products import bp as products_bp
 from app.utils import run_async
+from app.services.event_consumer import get_event_consumer
 from shared.logging_config import setup_logging, get_logger
 from shared.config import get_settings
 
@@ -59,6 +60,9 @@ def create_app(config=None, init_db=True):
     if init_db:
         _init_database()
     
+    # Start event consumer
+    _start_event_consumer()
+    
     return app
 
 
@@ -72,6 +76,22 @@ def _init_database():
     except Exception as e:
         logger.error(f"Failed to initialize database: {e}")
         raise
+
+
+def _start_event_consumer():
+    """Start the event consumer for order events"""
+    try:
+        # Check if RabbitMQ is configured
+        if settings.rabbitmq is None:
+            logger.warning("RabbitMQ not configured. Event consumer will not start.")
+            return
+        
+        event_consumer = get_event_consumer()
+        event_consumer.start()
+        logger.info("Event consumer started successfully")
+    except Exception as e:
+        logger.error(f"Failed to start event consumer: {e}", exc_info=True)
+        # Don't fail app startup if event consumer fails
 
 
 # Create app instance with automatic database initialization

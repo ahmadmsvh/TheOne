@@ -3,10 +3,6 @@ services:
   postgres:
     image: postgres:15-alpine
     container_name: postgres
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: theone_db
     ports:
       - "5432:5432"
     volumes:
@@ -41,10 +37,6 @@ services:
   mongodb:
     image: mongo:7
     container_name: mongodb
-    environment:
-      MONGO_INITDB_ROOT_USERNAME: admin
-      MONGO_INITDB_ROOT_PASSWORD: admin
-      MONGO_INITDB_DATABASE: theone_db
     ports:
       - "27017:27017"
     volumes:
@@ -166,12 +158,18 @@ services:
       - MONGODB_URL=mongodb://admin:admin@mongodb:27017/theone_db?authSource=admin
       - MONGODB_DATABASE=theone_db
       - REDIS_URL=redis://redis:6379
+      # - RABBITMQ_URL=amqp://admin:admin@rabbitmq:5672/
+      # - RABBITMQ_EXCHANGE=ecommerce.events
+      # - RABBITMQ_QUEUE_PREFIX=product-service
+      # - RABBITMQ_PREFETCH_COUNT=10
     depends_on:
       postgres:
         condition: service_healthy
       mongodb:
         condition: service_healthy
       redis:
+        condition: service_healthy
+      rabbitmq:
         condition: service_healthy
     volumes:
       - ./product-service:/app/product-service

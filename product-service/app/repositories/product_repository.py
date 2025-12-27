@@ -305,4 +305,57 @@ class ProductRepository:
         except (InvalidId, Exception) as e:
             logger.error(f"Error releasing stock for product {product_id}: {e}")
             raise
+    
+    async def complete_order_deduction(self, product_id: str, quantity: int) -> Optional[Product]:
+        """Deduct reserved stock from total stock (for completed orders)"""
+        try:
+            if not ObjectId.is_valid(product_id):
+                return None
+            
+            if quantity <= 0:
+                raise ValueError("Deduction quantity must be positive")
+            
+            # Get current product
+            product = await self.collection.find_one({"_id": ObjectId(product_id)})
+            if not product:
+                return None
+            
+            current_stock = product.get("stock", 0)
+            current_reserved = product.get("reserved_stock", 0)
+            
+            # Check if enough stock is reserved
+            if current_reserved < quantity:
+                raise ValueError(
+                    f"Insufficient reserved stock. Reserved: {current_reserved}, Requested deduction: {quantity}"
+                )
+            
+            # Check if total stock is sufficient
+            if current_stock < quantity:
+                raise ValueError(
+                    f"Insufficient total stock. Total: {current_stock}, Requested deduction: {quantity}"
+                )
+            
+            # Atomically deduct from both total stock and reserved stock
+            new_stock = current_stock - quantity
+            new_reserved = current_reserved - quantity
+            
+            result = await self.collection.update_one(
+                {"_id": ObjectId(product_id)},
+                {
+                    "$set": {
+                        "stock": max(0, new_stock),
+                        "reserved_stock": max(0, new_reserved),
+                        "updated_at": datetime.utcnow()
+                    }
+                }
+            )
+            
+            if result.matched_count == 0:
+                return None
+            
+            updated = await self.collection.find_one({"_id": ObjectId(product_id)})
+            return Product(**updated) if updated else None
+        except (InvalidId, Exception) as e:
+            logger.error(f"Error completing order deduction for product {product_id}: {e}")
+            raise
 
