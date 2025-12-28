@@ -18,22 +18,17 @@ def create_app(config=None, init_db=True):
 
     app = Flask(__name__)
     
-    # Load configuration if provided
     if config:
         app.config.update(config)
     
-    # Register blueprints
     app.register_blueprint(products_bp)
     
-    # Register routes
     @app.route("/")
     def home():
-        """Health check endpoint"""
         return jsonify({"message": "product-service-running", "status": "ok"})
     
     @app.route("/health")
     def health_check():
-        """Health check with database connection"""
         try:
             db_manager = get_db_manager()
             is_healthy = run_async(db_manager.health_check())
@@ -57,11 +52,9 @@ def create_app(config=None, init_db=True):
                 "error": str(e)
             }), 503
     
-    # Initialize database if requested
     if init_db:
         _init_database()
     
-    # Start event consumer
     _start_event_consumer()
     
     return app
@@ -80,9 +73,7 @@ def _init_database():
 
 
 def _start_event_consumer():
-    """Start the event consumer for order events in a background thread"""
     try:
-        # Check if RabbitMQ is configured
         if settings.rabbitmq is None:
             logger.warning("RabbitMQ not configured. Event consumer will not start.")
             return
@@ -90,7 +81,6 @@ def _start_event_consumer():
         import threading
         
         def run_async_consumer():
-            """Run async consumer in a separate event loop"""
             loop = asyncio.new_event_loop()
             asyncio.set_event_loop(loop)
             try:
@@ -107,10 +97,8 @@ def _start_event_consumer():
         logger.info("Event consumer thread started successfully")
     except Exception as e:
         logger.error(f"Failed to start event consumer: {e}", exc_info=True)
-        # Don't fail app startup if event consumer fails
 
 
-# Create app instance with automatic database initialization
 app = create_app()
 
 

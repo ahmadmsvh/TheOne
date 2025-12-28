@@ -12,15 +12,12 @@ logger = get_logger(__name__, os.getenv("SERVICE_NAME"))
 
 
 class ProductService:
-    """Service for product business logic"""
-    
+
     def __init__(self, database: AsyncIOMotorDatabase):
         self.repository = ProductRepository(database)
         self.event_publisher = get_event_publisher()
     
     def generate_sku(self) -> str:
-        """Generate a unique SKU"""
-        # Generate a unique SKU using UUID (first 8 characters)
         return f"PRD-{uuid.uuid4().hex[:8].upper()}"
     
     async def create_product(
@@ -29,38 +26,29 @@ class ProductService:
         user_id: str,
         vendor_id: Optional[str] = None
     ) -> Product:
-        """Create a new product with business logic"""
-        # Generate SKU if not provided
         if not product_data.sku:
             sku = self.generate_sku()
-            # Ensure SKU is unique
             while await self.repository.sku_exists(sku):
                 sku = self.generate_sku()
             product_data.sku = sku
         else:
-            # Check if SKU already exists
             if await self.repository.sku_exists(product_data.sku):
                 raise ValueError(f"Product with SKU '{product_data.sku}' already exists")
         
-        # Set vendor_id if provided
         if vendor_id:
             product_data.vendor_id = vendor_id
         
-        # Create product
         product = await self.repository.create(product_data, user_id)
         logger.info(f"Product created: {product.id} (SKU: {product.sku})")
         
-        # Publish product.created event
         try:
             await self.event_publisher.publish_product_created(product)
         except Exception as e:
             logger.error(f"Failed to publish product.created event: {e}", exc_info=True)
-            # Don't fail the operation if event publishing fails
         
         return product
     
     async def get_product(self, product_id: str) -> Optional[Product]:
-        """Get a product by ID"""
         return await self.repository.get_by_id(product_id)
     
     async def list_products(
@@ -71,7 +59,6 @@ class ProductService:
         search: Optional[str] = None,
         status: Optional[str] = None
     ) -> dict:
-        """List products with pagination"""
         skip = (page - 1) * limit
         
         products, total = await self.repository.list(
@@ -97,36 +84,29 @@ class ProductService:
         user_id: str,
         user_roles: list[str]
     ) -> Optional[Product]:
-        """Update a product with authorization checks"""
-        # Check if product exists
         product = await self.repository.get_by_id(product_id)
         if not product:
             return None
         
-        # If user is vendor, ensure they own the product
         if "Vendor" in user_roles and "Admin" not in user_roles:
             if product.vendor_id and product.vendor_id != user_id:
                 raise PermissionError("You can only update your own products")
         
-        # If SKU is being updated, check uniqueness
         if product_data.sku and product_data.sku != product.sku:
             if await self.repository.sku_exists(product_data.sku, exclude_id=product_id):
                 raise ValueError(f"Product with SKU '{product_data.sku}' already exists")
         
         updated_product = await self.repository.update(product_id, product_data, user_id)
         
-        # Publish product.updated event if update was successful
         if updated_product:
             try:
                 await self.event_publisher.publish_product_updated(updated_product)
             except Exception as e:
                 logger.error(f"Failed to publish product.updated event: {e}", exc_info=True)
-                # Don't fail the operation if event publishing fails
         
         return updated_product
     
     async def delete_product(self, product_id: str) -> bool:
-        """Delete a product"""
         return await self.repository.delete(product_id)
     
     async def adjust_inventory(
@@ -136,36 +116,28 @@ class ProductService:
         user_id: str,
         user_roles: list[str]
     ) -> Optional[Product]:
-        """Adjust product inventory (increase or decrease)"""
-        # Check if product exists
         product = await self.repository.get_by_id(product_id)
         if not product:
             return None
         
-        # Authorization: Vendor can only modify their own products, Admin can modify any
         if "Vendor" in user_roles and "Admin" not in user_roles:
             if product.vendor_id and product.vendor_id != user_id:
                 raise PermissionError("You can only adjust inventory for your own products")
         
-        # Store old stock value for event
         old_stock = product.stock
         
-        # Adjust stock
         updated_product = await self.repository.adjust_stock(product_id, quantity)
         
-        # Publish inventory.updated event if update was successful
         if updated_product:
             try:
                 quantity_change = updated_product.stock - old_stock
                 await self.event_publisher.publish_inventory_updated(updated_product, quantity_change)
             except Exception as e:
                 logger.error(f"Failed to publish inventory.updated event: {e}", exc_info=True)
-                # Don't fail the operation if event publishing fails
         
         return updated_product
     
     async def get_inventory(self, product_id: str) -> Optional[dict]:
-        """Get inventory information for a product"""
         product = await self.repository.get_by_id(product_id)
         if not product:
             return None
@@ -186,20 +158,15 @@ class ProductService:
         quantity: int,
         order_id: Optional[str] = None
     ) -> Optional[Product]:
-        """Reserve inventory for an order"""
-        # Check if product exists
         product = await self.repository.get_by_id(product_id)
         if not product:
             return None
         
-        # Check if product is active
         if product.status != ProductStatus.ACTIVE:
             raise ValueError(f"Cannot reserve inventory for product with status: {product.status}")
         
-        # Reserve stock
         updated_product = await self.repository.reserve_stock(product_id, quantity)
         
-        # Publish inventory.reserved event if reservation was successful
         if updated_product:
             try:
                 await self.event_publisher.publish_inventory_reserved(
@@ -209,7 +176,6 @@ class ProductService:
                 )
             except Exception as e:
                 logger.error(f"Failed to publish inventory.reserved event: {e}", exc_info=True)
-                # Don't fail the operation if event publishing fails
         
         return updated_product
     
@@ -219,16 +185,12 @@ class ProductService:
         quantity: int,
         order_id: Optional[str] = None
     ) -> Optional[Product]:
-        """Release reserved inventory (e.g., on order cancel)"""
-        # Check if product exists
         product = await self.repository.get_by_id(product_id)
         if not product:
             return None
         
-        # Release stock
         updated_product = await self.repository.release_stock(product_id, quantity)
         
-        # Publish inventory.released event if release was successful
         if updated_product:
             try:
                 await self.event_publisher.publish_inventory_released(
@@ -238,7 +200,6 @@ class ProductService:
                 )
             except Exception as e:
                 logger.error(f"Failed to publish inventory.released event: {e}", exc_info=True)
-                # Don't fail the operation if event publishing fails
         
         return updated_product
 

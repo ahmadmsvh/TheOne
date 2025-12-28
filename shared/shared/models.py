@@ -5,7 +5,6 @@ from pydantic import BaseModel, Field, ConfigDict
 
 
 class MessageType(str, Enum):
-    """Message types for inter-service communication"""
     ORDER_CREATED = "order.created"
     ORDER_UPDATED = "order.updated"
     ORDER_COMPLETED = "order.completed"
@@ -21,7 +20,6 @@ class MessageType(str, Enum):
 
 
 class BaseMessage(BaseModel):
-    """Base message model for all inter-service messages"""
     model_config = ConfigDict(use_enum_values=True)
     
     message_id: str = Field(..., description="Unique message identifier")
@@ -33,7 +31,6 @@ class BaseMessage(BaseModel):
 
 
 class OrderMessage(BaseMessage):
-    """Order-related messages"""
     order_id: str = Field(..., description="Order identifier")
     user_id: str = Field(..., description="User identifier")
     status: str = Field(..., description="Order status")
@@ -42,7 +39,6 @@ class OrderMessage(BaseMessage):
 
 
 class ProductMessage(BaseMessage):
-    """Product-related messages"""
     product_id: str = Field(..., description="Product identifier")
     name: str = Field(..., description="Product name")
     price: float = Field(..., description="Product price")
@@ -51,7 +47,6 @@ class ProductMessage(BaseMessage):
 
 
 class InventoryMessage(BaseMessage):
-    """Inventory-related messages"""
     product_id: str = Field(..., description="Product identifier")
     sku: Optional[str] = Field(None, description="Product SKU")
     quantity_change: Optional[int] = Field(None, description="Quantity change (for inventory.updated)")
@@ -63,7 +58,6 @@ class InventoryMessage(BaseMessage):
 
 
 class UserMessage(BaseMessage):
-    """User-related messages"""
     user_id: str = Field(..., description="User identifier")
     email: str = Field(..., description="User email")
     username: Optional[str] = Field(None, description="Username")
@@ -71,7 +65,6 @@ class UserMessage(BaseMessage):
 
 
 class NotificationMessage(BaseMessage):
-    """Notification messages"""
     user_id: str = Field(..., description="Target user identifier")
     notification_type: str = Field(..., description="Type of notification")
     title: str = Field(..., description="Notification title")
@@ -81,7 +74,6 @@ class NotificationMessage(BaseMessage):
 
 
 class HealthCheckResponse(BaseModel):
-    """Health check response model"""
     service: str = Field(..., description="Service name")
     status: str = Field(..., description="Service status")
     timestamp: datetime = Field(default_factory=datetime.utcnow)
@@ -90,7 +82,6 @@ class HealthCheckResponse(BaseModel):
 
 
 class ErrorResponse(BaseModel):
-    """Error response model"""
     error: str = Field(..., description="Error message")
     error_code: Optional[str] = Field(None, description="Error code")
     timestamp: datetime = Field(default_factory=datetime.utcnow)

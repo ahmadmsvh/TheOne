@@ -16,22 +16,15 @@ logger = get_logger(__name__, "auth-service")
 
 
 class SessionService:
-    """Unified service for session caching and token blacklisting in Redis"""
     
-    # Key prefixes
     SESSION_CACHE_PREFIX = "session:user:"
     BLACKLIST_PREFIX = "blacklist:refresh_token:"
     
     def __init__(self):
-        """Initialize session service"""
         self.redis = get_redis()
-        # TTL in seconds (matching refresh token expiry)
         self.default_ttl_seconds = REFRESH_TOKEN_EXPIRE_DAYS * 24 * 60 * 60
     
-    # ========== Session Cache Methods ==========
-    
     def _get_session_key(self, user_id: UUID) -> str:
-        """Generate cache key for user session"""
         return f"{self.SESSION_CACHE_PREFIX}{str(user_id)}"
     
     def cache_user_data(
@@ -40,7 +33,6 @@ class SessionService:
         email: str, 
         roles: List[str]
     ) -> bool:
-        """Cache user data in Redis"""
         try:
             cache_key = self._get_session_key(user_id)
             user_data = {
@@ -63,7 +55,6 @@ class SessionService:
             return False
     
     def get_user_data(self, user_id: UUID) -> Optional[Dict[str, Any]]:
-        """Get cached user data from Redis"""
         try:
             cache_key = self._get_session_key(user_id)
             cached_data = self.redis.client.get(cache_key)
@@ -84,7 +75,6 @@ class SessionService:
             return None
     
     def invalidate_user_cache(self, user_id: UUID) -> bool:
-        """Invalidate cached user data"""
         try:
             cache_key = self._get_session_key(user_id)
             deleted = self.redis.client.delete(cache_key)
@@ -102,12 +92,10 @@ class SessionService:
     # ========== Token Blacklist Methods ==========
     
     def _get_blacklist_key(self, token: str) -> str:
-        """Generate blacklist key for token"""
         token_hash = hashlib.sha256(token.encode()).hexdigest()
         return f"{self.BLACKLIST_PREFIX}{token_hash}"
     
     def _calculate_token_ttl(self, token: str) -> int:
-        """Calculate TTL for token based on its expiry time"""
         try:
             payload = decode_token(token)
             if payload and "exp" in payload:
@@ -121,7 +109,6 @@ class SessionService:
         return self.default_ttl_seconds
     
     def blacklist_token(self, token: str) -> bool:
-        """Add refresh token to blacklist"""
         try:
             blacklist_key = self._get_blacklist_key(token)
             ttl = self._calculate_token_ttl(token)
@@ -138,7 +125,6 @@ class SessionService:
             return False
     
     def is_blacklisted(self, token: str) -> bool:
-        """Check if refresh token is blacklisted"""
         try:
             blacklist_key = self._get_blacklist_key(token)
             exists = self.redis.client.exists(blacklist_key)
@@ -150,11 +136,9 @@ class SessionService:
             return False
         except Exception as e:
             logger.error(f"Failed to check token blacklist: {e}", exc_info=True)
-            # On error, assume not blacklisted to avoid blocking valid requests
             return False
     
     def remove_from_blacklist(self, token: str) -> bool:
-        """Remove token from blacklist (for testing/admin purposes)"""
         try:
             blacklist_key = self._get_blacklist_key(token)
             deleted = self.redis.client.delete(blacklist_key)
@@ -167,14 +151,11 @@ class SessionService:
             logger.error(f"Failed to remove token from blacklist: {e}", exc_info=True)
             return False
     
-    # ========== Convenience Methods ==========
-    
     def refresh_user_cache(
         self, 
         user_id: UUID, 
         email: str, 
         roles: List[str]
     ) -> bool:
-        """Refresh/update cached user data"""
         return self.cache_user_data(user_id, email, roles)
 

@@ -16,7 +16,6 @@ logger = logging.getLogger(__name__)
 
 
 class RabbitMQConnection:
-    """Async RabbitMQ connection manager"""
     
     def __init__(self, connection_url: Optional[str] = None):
         self.settings = get_settings()
@@ -25,14 +24,12 @@ class RabbitMQConnection:
         self._channel: Optional[AbstractChannel] = None
         self._exchange: Optional[AbstractExchange] = None
     
-    async def connect(self):
-        """Establish async connection to RabbitMQ"""
+    async def connect(self):    
         if self._connection is None or self._connection.is_closed:
             try:
                 self._connection = await aio_pika.connect_robust(self.connection_url)
                 self._channel = await self._connection.channel()
                 
-                # Declare exchange
                 self._exchange = await self._channel.declare_exchange(
                     self.settings.rabbitmq.exchange,
                     aio_pika.ExchangeType.TOPIC,
@@ -45,20 +42,17 @@ class RabbitMQConnection:
                 raise
         return self._connection
     
-    async def get_channel(self) -> AbstractChannel:
-        """Get channel instance"""
+    async def get_channel(self) -> AbstractChannel: 
         if self._channel is None or self._channel.is_closed:
             await self.connect()
         return self._channel
     
     async def get_exchange(self) -> AbstractExchange:
-        """Get exchange instance"""
         if self._exchange is None:
             await self.connect()
         return self._exchange
     
     async def close(self):
-        """Close RabbitMQ connection"""
         try:
             if self._channel and not self._channel.is_closed:
                 await self._channel.close()
@@ -69,7 +63,6 @@ class RabbitMQConnection:
             logger.error(f"Error closing RabbitMQ connection: {e}")
     
     async def health_check(self) -> bool:
-        """Check RabbitMQ health"""
         try:
             if self._connection is None or self._connection.is_closed:
                 await self.connect()
@@ -79,15 +72,13 @@ class RabbitMQConnection:
             return False
 
 
-class RabbitMQPublisher:
-    """Async RabbitMQ publisher"""
+class RabbitMQPublisher:    
     
     def __init__(self, connection: Optional[RabbitMQConnection] = None):
         self.connection = connection or RabbitMQConnection()
         self.settings = get_settings()
     
     async def publish(self, message: BaseMessage, routing_key: Optional[str] = None):
-        """Publish message asynchronously"""
         try:
             exchange = await self.connection.get_exchange()
             routing_key = routing_key or message.message_type.value
@@ -110,7 +101,6 @@ class RabbitMQPublisher:
             raise
     
     async def publish_raw(self, message_body: str, routing_key: str, headers: Optional[Dict[str, Any]] = None):
-        """Publish raw message asynchronously"""
         try:
             exchange = await self.connection.get_exchange()
             
@@ -131,7 +121,6 @@ class RabbitMQPublisher:
 
 
 class RabbitMQConsumer:
-    """Async RabbitMQ consumer"""
     
     def __init__(
         self,
@@ -148,63 +137,49 @@ class RabbitMQConsumer:
         self._queue: Optional[aio_pika.abc.AbstractQueue] = None
     
     async def setup_queue(self):
-        """Setup queue and bindings"""
         channel = await self.connection.get_channel()
         exchange = await self.connection.get_exchange()
         
-        # Declare queue
         self._queue = await channel.declare_queue(
             self.queue_name,
             durable=True
         )
         
-        # Bind queue to exchange with routing keys
         for routing_key in self.routing_keys:
             await self._queue.bind(exchange, routing_key=routing_key)
         
-        # Set QoS
         await channel.set_qos(prefetch_count=self.settings.rabbitmq.prefetch_count)
         
         logger.info(f"Queue {self.queue_name} setup complete with routing keys: {self.routing_keys}")
     
     async def process_message(self, message: aio_pika.IncomingMessage):
-        """Process incoming message
-        
-        Override this method if you need custom ack/nack handling.
-        """
         try:
             message_data = json.loads(message.body.decode('utf-8'))
             logger.info(f"Received message: {message_data.get('message_id', 'unknown')}")
             
             if self.callback:
-                # Callback can be sync or async
                 if asyncio.iscoroutinefunction(self.callback):
                     await self.callback(message_data, message.properties, message)
                 else:
                     self.callback(message_data, message.properties, message)
             
-            # Ack on successful processing
             await message.ack()
             
-        except json.JSONDecodeError as e:
+        except json.JSONDecodeError as e:   
             logger.error(f"Failed to decode message: {e}")
-            await message.nack(requeue=False)  # Don't requeue malformed messages
+            await message.nack(requeue=False)  
         except Exception as e:
             logger.error(f"Error processing message: {e}")
-            await message.nack(requeue=True)  # Requeue on other errors
+            await message.nack(requeue=True)  
     
     async def start_consuming(self):
-        """Start consuming messages asynchronously"""
         if self._queue is None:
             await self.setup_queue()
         
         logger.info(f"Started consuming from queue: {self.queue_name}")
-        # Note: consume() returns immediately, we need to keep the connection alive
-        # The actual consumption happens in the background
         await self._queue.consume(self.process_message, no_ack=False)
     
     async def stop_consuming(self):
-        """Stop consuming messages"""
         try:
             if self._queue:
                 await self._queue.cancel()
@@ -214,7 +189,6 @@ class RabbitMQConsumer:
 
 
 def retry_on_connection_error(max_retries: int = 3):
-    """Decorator to retry async operations on connection errors"""
     def decorator(func: Callable):
         @wraps(func)
         async def wrapper(*args, **kwargs):
@@ -225,7 +199,7 @@ def retry_on_connection_error(max_retries: int = 3):
                     if attempt == max_retries - 1:
                         raise
                     logger.warning(f"Connection error (attempt {attempt + 1}/{max_retries}): {e}")
-                    await asyncio.sleep(2 ** attempt)  # Exponential backoff
+                    await asyncio.sleep(2 ** attempt)  
             return None
         return wrapper
     return decorator

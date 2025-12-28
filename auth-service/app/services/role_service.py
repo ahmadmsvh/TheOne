@@ -18,7 +18,6 @@ logger = get_logger(__name__, "auth-service")
 
 
 class RoleService:
-    """Service for role business logic"""
     
     def __init__(self, db: Session):
 
@@ -28,7 +27,6 @@ class RoleService:
     
     def create_role(self, role_data: RoleCreateRequest) -> Role:
 
-        # Check if role name already exists
         if self.role_repository.get_by_name(role_data.name):
             logger.warning(f"Role creation attempt with existing name: {role_data.name}")
             raise HTTPException(
@@ -78,7 +76,6 @@ class RoleService:
                 detail="User not found"
             )
         
-        # Verify role exists
         role = self.role_repository.get_by_id(role_id)
         if not role:
             logger.warning(f"Role not found: {role_id}")
@@ -87,7 +84,6 @@ class RoleService:
                 detail="Role not found"
             )
         
-        # Check if role is already assigned
         user_roles = self.role_repository.get_user_roles(str(user_id))
         if role in user_roles:
             logger.warning(f"Role {role_id} already assigned to user {user_id}")
@@ -96,10 +92,8 @@ class RoleService:
                 detail=f"Role '{role.name}' is already assigned to this user"
             )
         
-        # Assign role
         try:
             self.role_repository.assign_role_to_user(str(user_id), role_id)
-            # Refresh user to get updated roles
             self.db.refresh(user)
             logger.info(f"Role {role_id} assigned to user {user_id}")
             return user
@@ -118,7 +112,6 @@ class RoleService:
     
     def remove_role_from_user(self, user_id: UUID, role_id: int) -> User:
 
-        # Verify user exists
         user = self.user_repository.get_by_id(user_id)
         if not user:
             logger.warning(f"User not found: {user_id}")
@@ -127,7 +120,6 @@ class RoleService:
                 detail="User not found"
             )
         
-        # Verify role exists
         role = self.role_repository.get_by_id(role_id)
         if not role:
             logger.warning(f"Role not found: {role_id}")
@@ -136,7 +128,6 @@ class RoleService:
                 detail="Role not found"
             )
         
-        # Check if role is assigned
         user_roles = self.role_repository.get_user_roles(user_id)
         if role not in user_roles:
             logger.warning(f"Role {role_id} not assigned to user {user_id}")
@@ -145,7 +136,6 @@ class RoleService:
                 detail=f"Role '{role.name}' is not assigned to this user"
             )
         
-        # Remove role
         removed = self.role_repository.remove_role_from_user(user_id, role_id)
         if not removed:
             raise HTTPException(
@@ -153,7 +143,6 @@ class RoleService:
                 detail="Failed to remove role"
             )
         
-        # Refresh user to get updated roles
         self.db.refresh(user)
         logger.info(f"Role {role_id} removed from user {user_id}")
         return user

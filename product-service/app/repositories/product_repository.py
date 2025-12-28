@@ -23,7 +23,6 @@ class ProductRepository:
             product_dict["created_at"] = datetime.utcnow()
             product_dict["updated_at"] = datetime.utcnow()
             product_dict["created_by"] = user_id
-            # Ensure reserved_stock is set (defaults to 0 for new products)
             if "reserved_stock" not in product_dict:
                 product_dict["reserved_stock"] = 0
             
@@ -71,7 +70,6 @@ class ProductRepository:
         try:
             query: Dict[str, Any] = {}
             
-            # Apply filters
             if category:
                 query["category"] = category
             if status:
@@ -79,25 +77,20 @@ class ProductRepository:
             if search:
                 query["$text"] = {"$search": search}
             
-            # Get total count
             total = await self.collection.count_documents(query)
             
-            # Get products
             cursor = self.collection.find(query).skip(skip).limit(limit).sort("created_at", -1)
             products = await cursor.to_list(length=limit)
             
             product_list = [Product(**p) for p in products]
             return product_list, total
         except (RuntimeError, ValueError) as e:
-            # Check if this is the "attached to a different loop" error
             error_msg = str(e)
             if "different loop" in error_msg.lower() or "attached to a different" in error_msg.lower():
                 logger.warning("Database connection attached to different event loop, reconnecting...")
-                # Reconnect and update collection reference
                 from app.core.database import get_database
                 self.db = await get_database()
                 self.collection = self.db.products
-                # Retry the operation
                 total = await self.collection.count_documents(query)
                 cursor = self.collection.find(query).skip(skip).limit(limit).sort("created_at", -1)
                 products = await cursor.to_list(length=limit)
@@ -161,7 +154,6 @@ class ProductRepository:
             if not ObjectId.is_valid(product_id):
                 return None
             
-            # Get current product
             product = await self.collection.find_one({"_id": ObjectId(product_id)})
             if not product:
                 return None
@@ -169,11 +161,9 @@ class ProductRepository:
             current_stock = product.get("stock", 0)
             new_stock = current_stock + quantity_change
             
-            # Ensure stock doesn't go negative
             if new_stock < 0:
                 raise ValueError(f"Insufficient stock. Current: {current_stock}, Requested change: {quantity_change}")
             
-            # Update stock and timestamp
             result = await self.collection.update_one(
                 {"_id": ObjectId(product_id)},
                 {
@@ -187,7 +177,6 @@ class ProductRepository:
             if result.matched_count == 0:
                 return None
             
-            # If reserved_stock exceeds new stock, adjust it
             updated_product = await self.collection.find_one({"_id": ObjectId(product_id)})
             if updated_product:
                 reserved = updated_product.get("reserved_stock", 0)
@@ -217,7 +206,6 @@ class ProductRepository:
             if quantity <= 0:
                 raise ValueError("Reservation quantity must be positive")
             
-            # Get current product
             product = await self.collection.find_one({"_id": ObjectId(product_id)})
             if not product:
                 return None
@@ -226,13 +214,11 @@ class ProductRepository:
             current_reserved = product.get("reserved_stock", 0)
             available_stock = current_stock - current_reserved
             
-            # Check if enough stock is available
             if available_stock < quantity:
                 raise ValueError(
                     f"Insufficient available stock. Available: {available_stock}, Requested: {quantity}"
                 )
             
-            # Update reserved stock
             new_reserved = current_reserved + quantity
             result = await self.collection.update_one(
                 {"_id": ObjectId(product_id)},
@@ -261,26 +247,23 @@ class ProductRepository:
             if quantity <= 0:
                 raise ValueError("Release quantity must be positive")
             
-            # Get current product
             product = await self.collection.find_one({"_id": ObjectId(product_id)})
             if not product:
                 return None
             
             current_reserved = product.get("reserved_stock", 0)
             
-            # Check if enough stock is reserved
             if current_reserved < quantity:
                 raise ValueError(
                     f"Insufficient reserved stock. Reserved: {current_reserved}, Requested release: {quantity}"
                 )
             
-            # Update reserved stock
             new_reserved = current_reserved - quantity
             result = await self.collection.update_one(
                 {"_id": ObjectId(product_id)},
                 {
                     "$set": {
-                        "reserved_stock": max(0, new_reserved),  # Ensure non-negative
+                        "reserved_stock": max(0, new_reserved),
                         "updated_at": datetime.utcnow()
                     }
                 }
@@ -303,7 +286,6 @@ class ProductRepository:
             if quantity <= 0:
                 raise ValueError("Deduction quantity must be positive")
             
-            # Get current product
             product = await self.collection.find_one({"_id": ObjectId(product_id)})
             if not product:
                 return None
@@ -311,19 +293,16 @@ class ProductRepository:
             current_stock = product.get("stock", 0)
             current_reserved = product.get("reserved_stock", 0)
             
-            # Check if enough stock is reserved
             if current_reserved < quantity:
                 raise ValueError(
                     f"Insufficient reserved stock. Reserved: {current_reserved}, Requested deduction: {quantity}"
                 )
             
-            # Check if total stock is sufficient
             if current_stock < quantity:
                 raise ValueError(
                     f"Insufficient total stock. Total: {current_stock}, Requested deduction: {quantity}"
                 )
             
-            # Atomically deduct from both total stock and reserved stock
             new_stock = current_stock - quantity
             new_reserved = current_reserved - quantity
             

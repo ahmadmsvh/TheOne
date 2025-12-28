@@ -11,7 +11,6 @@ app = FastAPI(
     version="1.0.0"
 )
 
-# Include API routers
 app.include_router(api_router, prefix="/api/v1")
 
 

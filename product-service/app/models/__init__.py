@@ -5,8 +5,7 @@ from bson import ObjectId
 from enum import Enum
 
 
-class PyObjectId(ObjectId):
-    """Custom ObjectId type for Pydantic v2"""
+class PyObjectId(ObjectId):     
     @classmethod
     def __get_pydantic_core_schema__(cls, source_type, handler):
         from pydantic_core import core_schema
@@ -37,7 +36,6 @@ class PyObjectId(ObjectId):
 
 
 class ProductStatus(str, Enum):
-    """Product status enumeration"""
     ACTIVE = "active"
     INACTIVE = "inactive"
     OUT_OF_STOCK = "out_of_stock"
@@ -46,7 +44,6 @@ class ProductStatus(str, Enum):
 
 
 class ProductCategory(BaseModel):
-    """Product category model"""
     model_config = ConfigDict(arbitrary_types_allowed=True)
     
     id: Optional[str] = Field(None, description="Category ID")
@@ -56,7 +53,6 @@ class ProductCategory(BaseModel):
 
 
 class ProductImage(BaseModel):
-    """Product image model"""
     url: str = Field(..., description="Image URL")
     alt_text: Optional[str] = Field(None, description="Image alt text")
     is_primary: bool = Field(default=False, description="Is this the primary image")
@@ -64,7 +60,6 @@ class ProductImage(BaseModel):
 
 
 class ProductVariant(BaseModel):
-    """Product variant model (size, color, etc.)"""
     name: str = Field(..., description="Variant name (e.g., 'Size', 'Color')")
     value: str = Field(..., description="Variant value (e.g., 'Large', 'Red')")
     sku: Optional[str] = Field(None, description="Variant-specific SKU")
@@ -73,7 +68,6 @@ class ProductVariant(BaseModel):
 
 
 class Product(BaseModel):
-    """Product model for MongoDB"""
     model_config = ConfigDict(
         arbitrary_types_allowed=True,
         populate_by_name=True
@@ -109,14 +103,12 @@ class Product(BaseModel):
     @field_validator("price", "compare_at_price", "cost_price", mode="before")
     @classmethod
     def validate_price(cls, v):
-        """Validate price fields"""
         if v is not None and v < 0:
             raise ValueError("Price must be greater than or equal to 0")
         return v
     
     @model_validator(mode="after")
     def validate_compare_price(self):
-        """Validate compare_at_price is greater than price"""
         if self.compare_at_price is not None and self.price is not None:
             if self.compare_at_price <= self.price:
                 raise ValueError("compare_at_price must be greater than price")
@@ -124,7 +116,6 @@ class Product(BaseModel):
     
     @model_validator(mode="after")
     def validate_reserved_stock(self):
-        """Validate reserved_stock doesn't exceed stock"""
         if self.reserved_stock > self.stock:
             raise ValueError("reserved_stock cannot exceed stock")
         return self

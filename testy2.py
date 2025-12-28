@@ -83,7 +83,3 @@
 #     threads.append(t)
 #     t.start()
 
-# dict = {}
-# dict.setdefault("name", "John")
-# dict.setdefault("age", 30)
-# print(dict.get("age"))

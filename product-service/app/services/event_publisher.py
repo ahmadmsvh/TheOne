@@ -13,7 +13,6 @@ logger = get_logger(__name__, os.getenv("SERVICE_NAME"))
 
 
 class ProductEventPublisher:
-    """Event publisher for product-service events"""
     
     def __init__(self):
         self.settings = None
@@ -22,7 +21,6 @@ class ProductEventPublisher:
         self._service_name = os.getenv("SERVICE_NAME", "product-service")
     
     async def _get_publisher(self) -> Optional[RabbitMQPublisher]:
-        """Get or create RabbitMQ publisher instance"""
         if self._publisher is None:
             try:
                 self.settings = get_settings()
@@ -33,7 +31,6 @@ class ProductEventPublisher:
                 
                 self._connection = RabbitMQConnection()
                 self._publisher = RabbitMQPublisher(self._connection)
-                # Connect to ensure exchange is declared
                 await self._connection.connect()
                 logger.info("Product event publisher initialized")
             except Exception as e:
@@ -42,7 +39,6 @@ class ProductEventPublisher:
         return self._publisher
     
     async def publish_event(self, message, routing_key: str):
-        """Publish event asynchronously"""
         try:
             publisher = await self._get_publisher()
             if publisher is None:
@@ -52,10 +48,8 @@ class ProductEventPublisher:
             await publisher.publish(message, routing_key=routing_key)
         except Exception as e:
             logger.error(f"Error publishing event: {e}", exc_info=True)
-            # Don't raise - event publishing failures shouldn't break the main flow
     
     async def publish_product_created(self, product: Product, correlation_id: Optional[str] = None):
-        """Publish product.created event"""
         try:
             message = ProductMessage(
                 message_id=str(uuid.uuid4()),
@@ -79,7 +73,6 @@ class ProductEventPublisher:
             logger.error(f"Failed to create product.created event: {e}", exc_info=True)
     
     async def publish_product_updated(self, product: Product, correlation_id: Optional[str] = None):
-        """Publish product.updated event"""
         try:
             message = ProductMessage(
                 message_id=str(uuid.uuid4()),
@@ -108,7 +101,6 @@ class ProductEventPublisher:
         quantity_change: int,
         correlation_id: Optional[str] = None
     ):
-        """Publish inventory.updated event"""
         try:
             available_stock = product.stock - product.reserved_stock
             message = InventoryMessage(
@@ -137,7 +129,6 @@ class ProductEventPublisher:
         order_id: Optional[str] = None,
         correlation_id: Optional[str] = None
     ):
-        """Publish inventory.reserved event"""
         try:
             available_stock = product.stock - product.reserved_stock
             message = InventoryMessage(
@@ -167,7 +158,6 @@ class ProductEventPublisher:
         order_id: Optional[str] = None,
         correlation_id: Optional[str] = None
     ):
-        """Publish inventory.released event"""
         try:
             available_stock = product.stock - product.reserved_stock
             message = InventoryMessage(
@@ -191,7 +181,6 @@ class ProductEventPublisher:
             logger.error(f"Failed to create inventory.released event: {e}", exc_info=True)
     
     async def close(self):
-        """Close RabbitMQ connection"""
         if self._connection:
             try:
                 await self._connection.close()
@@ -199,12 +188,10 @@ class ProductEventPublisher:
                 logger.error(f"Error closing RabbitMQ connection: {e}")
 
 
-# Global event publisher instance (singleton pattern)
 _event_publisher: Optional[ProductEventPublisher] = None
 
 
-def get_event_publisher() -> ProductEventPublisher:
-    """Get global event publisher instance"""
+def get_event_publisher() -> ProductEventPublisher: 
     global _event_publisher
     if _event_publisher is None:
         _event_publisher = ProductEventPublisher()
