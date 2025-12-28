@@ -27,7 +27,6 @@ bp = Blueprint("products", __name__, url_prefix="/api/v1/products")
 @require_role("Vendor")
 @async_route
 async def create_product(current_user):
-    """Create a new product (Vendor only)"""
     try:
         # Get database
         db = await get_database()
@@ -65,7 +64,6 @@ async def create_product(current_user):
 @bp.route("", methods=["GET"])
 @async_route
 async def list_products():
-    """List products with pagination (Public access)"""
     try:
         # Get query parameters
         page = int(request.args.get("page", 1))
@@ -113,7 +111,6 @@ async def list_products():
 @bp.route("/<product_id>", methods=["GET"])
 @async_route
 async def get_product(product_id):
-    """Get a single product"""
     try:
         # Get database
         db = await get_database()
@@ -138,7 +135,6 @@ async def get_product(product_id):
 @require_any_role("Vendor", "Admin")
 @async_route
 async def update_product(product_id, current_user):
-    """Update a product (Vendor/Admin)"""
     try:
         # Get database
         db = await get_database()
@@ -183,7 +179,6 @@ async def update_product(product_id, current_user):
 @require_role("Admin")
 @async_route
 async def delete_product(product_id, current_user):
-    """Delete a product (Admin only)"""
     try:
         # Get database
         db = await get_database()
@@ -206,7 +201,6 @@ async def delete_product(product_id, current_user):
 @require_role("Vendor")
 @async_route
 async def adjust_inventory(product_id, current_user):
-    """Adjust product inventory (Vendor only, can only modify their own products)"""
     try:
         # Get database
         db = await get_database()
@@ -250,7 +244,6 @@ async def adjust_inventory(product_id, current_user):
 @bp.route("/<product_id>/inventory", methods=["GET"])
 @async_route
 async def get_inventory(product_id):
-    """Get product inventory information (Public access)"""
     try:
         # Get database
         db = await get_database()
@@ -275,7 +268,6 @@ async def get_inventory(product_id):
 @require_auth
 @async_route
 async def reserve_inventory(product_id, current_user):
-    """Reserve inventory for an order (Authenticated users)"""
     try:
         # Get database
         db = await get_database()
@@ -313,7 +305,6 @@ async def reserve_inventory(product_id, current_user):
 @require_auth
 @async_route
 async def release_inventory(product_id, current_user):
-    """Release reserved inventory (e.g., on order cancel) (Authenticated users)"""
     try:
         # Get database
         db = await get_database()

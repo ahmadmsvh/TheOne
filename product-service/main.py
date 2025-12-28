@@ -1,5 +1,6 @@
 from flask import Flask, jsonify
 import os
+import asyncio
 
 from app.core.database import get_db_manager
 from app.api.v1.products import bp as products_bp
@@ -79,16 +80,31 @@ def _init_database():
 
 
 def _start_event_consumer():
-    """Start the event consumer for order events"""
+    """Start the event consumer for order events in a background thread"""
     try:
         # Check if RabbitMQ is configured
         if settings.rabbitmq is None:
             logger.warning("RabbitMQ not configured. Event consumer will not start.")
             return
         
-        event_consumer = get_event_consumer()
-        event_consumer.start()
-        logger.info("Event consumer started successfully")
+        import threading
+        
+        def run_async_consumer():
+            """Run async consumer in a separate event loop"""
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+            try:
+                event_consumer = get_event_consumer()
+                event_consumer.start()
+                loop.run_forever()
+            except Exception as e:
+                logger.error(f"Error in consumer thread: {e}", exc_info=True)
+            finally:
+                loop.close()
+        
+        consumer_thread = threading.Thread(target=run_async_consumer, daemon=True)
+        consumer_thread.start()
+        logger.info("Event consumer thread started successfully")
     except Exception as e:
         logger.error(f"Failed to start event consumer: {e}", exc_info=True)
         # Don't fail app startup if event consumer fails

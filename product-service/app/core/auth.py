@@ -24,7 +24,6 @@ JWT_ALGORITHM = settings.app.jwt_algorithm
 
 
 def decode_token(token: str) -> Optional[Dict[str, Any]]:
-    """Decode and verify JWT token"""
     try:
         payload = jwt.decode(token, JWT_SECRET_KEY, algorithms=[JWT_ALGORITHM])
         return payload
@@ -40,7 +39,6 @@ def decode_token(token: str) -> Optional[Dict[str, Any]]:
 
 
 def get_current_user() -> Optional[Dict[str, Any]]:
-    """Extract and validate user from Authorization header"""
     auth_header = request.headers.get("Authorization")
     if not auth_header:
         logger.debug("No Authorization header found")
@@ -76,7 +74,6 @@ def get_current_user() -> Optional[Dict[str, Any]]:
 
 
 def require_auth(f):
-    """Decorator to require authentication (works with async functions)"""
     @wraps(f)
     def decorated_function(*args, **kwargs):
         user_data = get_current_user()
@@ -100,7 +97,6 @@ def require_auth(f):
 
 
 def require_role(role_name: str):
-    """Decorator factory to require specific role"""
     def decorator(f):
         @wraps(f)
         @require_auth
@@ -128,7 +124,6 @@ def require_role(role_name: str):
 
 
 def require_any_role(*role_names: str):
-    """Decorator factory to require any of the specified roles"""
     def decorator(f):
         @wraps(f)
         @require_auth

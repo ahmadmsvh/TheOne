@@ -12,14 +12,12 @@ logger = get_logger(__name__, os.getenv("SERVICE_NAME"))
 
 
 class ProductRepository:
-    """Repository for product database operations"""
     
     def __init__(self, database: AsyncIOMotorDatabase):
         self.db = database
         self.collection = database.products
     
     async def create(self, product_data: ProductCreateRequest, user_id: str) -> Product:
-        """Create a new product"""
         try:
             product_dict = product_data.model_dump(exclude_none=True)
             product_dict["created_at"] = datetime.utcnow()
@@ -38,7 +36,6 @@ class ProductRepository:
             raise
     
     async def get_by_id(self, product_id: str) -> Optional[Product]:
-        """Get product by ID"""
         try:
             if not ObjectId.is_valid(product_id):
                 return None
@@ -53,7 +50,6 @@ class ProductRepository:
             return None
     
     async def get_by_sku(self, sku: str) -> Optional[Product]:
-        """Get product by SKU"""
         try:
             product = await self.collection.find_one({"sku": sku})
             if not product:
@@ -72,7 +68,6 @@ class ProductRepository:
         search: Optional[str] = None,
         status: Optional[str] = None
     ) -> tuple[List[Product], int]:
-        """List products with pagination and filters"""
         try:
             query: Dict[str, Any] = {}
             
@@ -116,7 +111,6 @@ class ProductRepository:
             raise
     
     async def update(self, product_id: str, product_data: ProductUpdateRequest, user_id: str) -> Optional[Product]:
-        """Update a product"""
         try:
             if not ObjectId.is_valid(product_id):
                 return None
@@ -140,7 +134,6 @@ class ProductRepository:
             return None
     
     async def delete(self, product_id: str) -> bool:
-        """Delete a product"""
         try:
             if not ObjectId.is_valid(product_id):
                 return False
@@ -152,7 +145,6 @@ class ProductRepository:
             return False
     
     async def sku_exists(self, sku: str, exclude_id: Optional[str] = None) -> bool:
-        """Check if SKU already exists"""
         try:
             query: Dict[str, Any] = {"sku": sku}
             if exclude_id and ObjectId.is_valid(exclude_id):
@@ -165,7 +157,6 @@ class ProductRepository:
             return False
     
     async def adjust_stock(self, product_id: str, quantity_change: int) -> Optional[Product]:
-        """Adjust product stock (increase or decrease)"""
         try:
             if not ObjectId.is_valid(product_id):
                 return None
@@ -219,7 +210,6 @@ class ProductRepository:
             raise
     
     async def reserve_stock(self, product_id: str, quantity: int) -> Optional[Product]:
-        """Reserve stock for an order"""
         try:
             if not ObjectId.is_valid(product_id):
                 return None
@@ -264,7 +254,6 @@ class ProductRepository:
             raise
     
     async def release_stock(self, product_id: str, quantity: int) -> Optional[Product]:
-        """Release reserved stock"""
         try:
             if not ObjectId.is_valid(product_id):
                 return None
@@ -307,7 +296,6 @@ class ProductRepository:
             raise
     
     async def complete_order_deduction(self, product_id: str, quantity: int) -> Optional[Product]:
-        """Deduct reserved stock from total stock (for completed orders)"""
         try:
             if not ObjectId.is_valid(product_id):
                 return None

@@ -1,27 +1,18 @@
 import json
-import time
 import asyncio
 from typing import Optional, Dict, Any, Callable
 from datetime import datetime
-from concurrent.futures import ThreadPoolExecutor
 import os
-import threading
 
-from pika.exceptions import AMQPConnectionError, AMQPChannelError
+import aio_pika
 from shared.logging_config import get_logger
 from shared.config import get_settings
 from shared.rabbitmq import RabbitMQConsumer, RabbitMQConnection
-from pika.adapters.blocking_connection import BlockingChannel
 from shared.models import OrderMessage, MessageType
 from app.core.database import get_db_manager
 from app.repositories.product_repository import ProductRepository
-from app.services.product_service import ProductService
-from app.utils import run_async
 
 logger = get_logger(__name__, os.getenv("SERVICE_NAME"))
-
-# Thread pool executor for running blocking RabbitMQ operations
-_executor = ThreadPoolExecutor(max_workers=5, thread_name_prefix="rabbitmq-consumer")
 
 # Retry configuration
 MAX_RETRIES = 3
@@ -29,7 +20,7 @@ RETRY_DELAY_BASE = 2  # Base delay in seconds (exponential backoff)
 
 
 class OrderEventConsumer:
-    """Consumer for order-related events"""
+    """Async consumer for order-related events"""
     
     def __init__(self):
         self.settings = get_settings()
@@ -37,14 +28,14 @@ class OrderEventConsumer:
         self._connection: Optional[RabbitMQConnection] = None
         self._service_name = os.getenv("SERVICE_NAME", "product-service")
         self._running = False
-        self._consumer_thread: Optional[threading.Thread] = None
-        
-    def _get_connection(self) -> RabbitMQConnection:
+        self._consumer_task: Optional[asyncio.Task] = None
+    
+    async def _get_connection(self) -> RabbitMQConnection:
         """Get or create RabbitMQ connection instance"""
         if self._connection is None:
             try:
                 self._connection = RabbitMQConnection()
-                self._connection.connect()
+                await self._connection.connect()
                 logger.info("RabbitMQ connection established for consumer")
             except Exception as e:
                 logger.error(f"Failed to initialize RabbitMQ connection: {e}")
@@ -70,8 +61,8 @@ class OrderEventConsumer:
             
             # Get database manager
             db_manager = self._get_db_manager()
-            await run_async(db_manager.connect())
-            database = await run_async(db_manager.get_database())
+            await db_manager.connect()
+            database = await db_manager.get_database()
             repository = ProductRepository(database)
             
             # Process each item in the order
@@ -150,8 +141,8 @@ class OrderEventConsumer:
             
             # Get database manager
             db_manager = self._get_db_manager()
-            await run_async(db_manager.connect())
-            database = await run_async(db_manager.get_database())
+            await db_manager.connect()
+            database = await db_manager.get_database()
             repository = ProductRepository(database)
             
             # Process each item in the order
@@ -252,22 +243,13 @@ class OrderEventConsumer:
         
         return False
     
-    def _process_message_sync(
-        self,
-        ch,
-        method,
-        properties,
-        body: bytes
-    ):
-        """
-        Synchronous message processing wrapper (runs async handler in event loop)
-        This is called by RabbitMQConsumer's callback
-        """
+    async def _process_message_async(self, message: aio_pika.IncomingMessage):
+        """Process incoming message asynchronously"""
         try:
             # Parse message
-            message_data = json.loads(body.decode('utf-8'))
+            message_data = json.loads(message.body.decode('utf-8'))
             message_type = message_data.get("message_type")
-            routing_key = method.routing_key if hasattr(method, 'routing_key') else message_type
+            routing_key = message.routing_key or message_type
             
             logger.info(f"Received message: {message_data.get('message_id', 'unknown')}, type: {message_type}, routing_key: {routing_key}")
             
@@ -288,41 +270,30 @@ class OrderEventConsumer:
             if handler is None:
                 logger.warning(f"Unknown message type or routing key: {message_type}/{routing_key}")
                 # Ack the message even if we don't handle it
-                ch.basic_ack(delivery_tag=method.delivery_tag)
+                await message.ack()
                 return
             
-            # Run async handler in event loop
-            loop = asyncio.new_event_loop()
-            asyncio.set_event_loop(loop)
-            try:
-                success = loop.run_until_complete(
-                    self._process_with_retry(message_data, handler)
-                )
-                
-                if success:
-                    ch.basic_ack(delivery_tag=method.delivery_tag)
-                    logger.info(f"Successfully processed message {message_data.get('message_id', 'unknown')}")
-                else:
-                    # After max retries, nack and don't requeue (send to DLQ)
-                    ch.basic_nack(delivery_tag=method.delivery_tag, requeue=False)
-                    logger.error(f"Failed to process message {message_data.get('message_id', 'unknown')} after retries")
-            finally:
-                loop.close()
+            # Process message with retry logic
+            success = await self._process_with_retry(message_data, handler)
+            
+            if success:
+                logger.info(f"Successfully processed message {message_data.get('message_id', 'unknown')}")
+                await message.ack()
+            else:
+                # After max retries, nack and don't requeue (send to DLQ)
+                logger.error(f"Failed to process message {message_data.get('message_id', 'unknown')} after retries")
+                await message.nack(requeue=False)
                 
         except json.JSONDecodeError as e:
             logger.error(f"Failed to decode message: {e}")
-            ch.basic_nack(delivery_tag=method.delivery_tag, requeue=False)
+            await message.nack(requeue=False)
         except Exception as e:
-            logger.error(f"Error in message processing wrapper: {e}", exc_info=True)
-            # Try to nack, but if that fails, just log
-            try:
-                ch.basic_nack(delivery_tag=method.delivery_tag, requeue=True)
-            except:
-                pass
+            logger.error(f"Error processing message: {e}", exc_info=True)
+            await message.nack(requeue=True)
     
-    def _create_consumer(self) -> RabbitMQConsumer:
+    async def _create_consumer(self) -> RabbitMQConsumer:
         """Create and configure RabbitMQ consumer"""
-        connection = self._get_connection()
+        connection = await self._get_connection()
         
         # Subscribe to order.completed and order.cancelled events
         routing_keys = ["order.completed", "order.cancelled"]
@@ -337,56 +308,75 @@ class OrderEventConsumer:
         
         return consumer
     
+    async def _run_consumer(self):
+        """Run the consumer loop"""
+        try:
+            self._running = True
+            logger.info("Starting order event consumer...")
+            
+            # Create consumer and setup queue
+            self._consumer = await self._create_consumer()
+            await self._consumer.setup_queue()
+            
+            # Start consuming (this sets up the consumer but returns immediately)
+            await self._consumer.start_consuming()
+            
+            # Keep the task alive by waiting indefinitely
+            # Messages will be processed asynchronously by the consumer
+            while self._running:
+                await asyncio.sleep(1)
+            
+        except asyncio.CancelledError:
+            logger.info("Consumer task cancelled")
+            self._running = False
+        except Exception as e:
+            logger.error(f"Error in consumer loop: {e}", exc_info=True)
+            self._running = False
+            raise
+    
     def start(self):
-        """Start consuming messages in a background thread"""
+        """Start consuming messages in a background task
+        
+        Note: This should be called from within an async context or a thread with its own event loop.
+        When called from a synchronous context (like Flask), use it within a thread that creates its own event loop.
+        """
         if self._running:
             logger.warning("Consumer is already running")
             return
         
-        def run_consumer():
-            """Run consumer in thread"""
-            try:
-                self._running = True
-                logger.info("Starting order event consumer...")
-                
-                # Create consumer and setup queue
-                self._consumer = self._create_consumer()
-                self._consumer.setup_queue()
-                
-                # Start consuming (blocking call)
-                channel = self._consumer.connection.channel
-                channel.basic_consume(
-                    queue=self._consumer.queue_name,
-                    on_message_callback=self._consumer.process_message
-                )
-                
-                logger.info(f"Started consuming from queue: {self._consumer.queue_name}")
-                channel.start_consuming()
-                
-            except KeyboardInterrupt:
-                logger.info("Received interrupt signal, stopping consumer...")
-                self.stop()
-            except Exception as e:
-                logger.error(f"Error in consumer thread: {e}", exc_info=True)
-                self._running = False
+        # Get or create event loop for the current thread
+        try:
+            loop = asyncio.get_event_loop()
+            if loop.is_closed():
+                raise RuntimeError("Event loop is closed")
+        except RuntimeError:
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
         
-        self._consumer_thread = threading.Thread(target=run_consumer, daemon=True)
-        self._consumer_thread.start()
-        logger.info("Order event consumer thread started")
+        # Create and start the consumer task
+        self._consumer_task = loop.create_task(self._run_consumer())
+        logger.info("Order event consumer task started")
     
-    def stop(self):
+    async def stop(self):
         """Stop consuming messages"""
         self._running = False
+        if self._consumer_task:
+            self._consumer_task.cancel()
+            try:
+                await self._consumer_task
+            except asyncio.CancelledError:
+                pass
+        
         if self._consumer:
             try:
-                self._consumer.stop_consuming()
+                await self._consumer.stop_consuming()
                 logger.info("Stopped order event consumer")
             except Exception as e:
                 logger.error(f"Error stopping consumer: {e}")
         
         if self._connection:
             try:
-                self._connection.close()
+                await self._connection.close()
             except Exception as e:
                 logger.error(f"Error closing connection: {e}")
 
@@ -398,9 +388,9 @@ class OrderEventRabbitMQConsumer(RabbitMQConsumer):
         super().__init__(queue_name, routing_keys, connection, callback=None)
         self.event_handler = event_handler
     
-    def process_message(self, ch, method, properties, body: bytes):
-        """Override process_message to use our custom handler with retry logic"""
-        self.event_handler._process_message_sync(ch, method, properties, body)
+    async def process_message(self, message: aio_pika.IncomingMessage):
+        """Override process_message to use our custom async handler with retry logic"""
+        await self.event_handler._process_message_async(message)
 
 
 # Global consumer instance (singleton pattern)
@@ -413,4 +403,3 @@ def get_event_consumer() -> OrderEventConsumer:
     if _event_consumer is None:
         _event_consumer = OrderEventConsumer()
     return _event_consumer
-

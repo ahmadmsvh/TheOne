@@ -2,7 +2,6 @@ import uuid
 import asyncio
 from typing import Optional
 from datetime import datetime
-from concurrent.futures import ThreadPoolExecutor
 import os
 from shared.logging_config import get_logger
 from shared.config import get_settings
@@ -11,9 +10,6 @@ from shared.models import MessageType, ProductMessage, InventoryMessage
 from app.models import Product
 
 logger = get_logger(__name__, os.getenv("SERVICE_NAME"))
-
-# Thread pool executor for running blocking RabbitMQ operations
-_executor = ThreadPoolExecutor(max_workers=5, thread_name_prefix="rabbitmq")
 
 
 class ProductEventPublisher:
@@ -25,7 +21,7 @@ class ProductEventPublisher:
         self._connection: Optional[RabbitMQConnection] = None
         self._service_name = os.getenv("SERVICE_NAME", "product-service")
     
-    def _get_publisher(self) -> RabbitMQPublisher:
+    async def _get_publisher(self) -> Optional[RabbitMQPublisher]:
         """Get or create RabbitMQ publisher instance"""
         if self._publisher is None:
             try:
@@ -38,34 +34,25 @@ class ProductEventPublisher:
                 self._connection = RabbitMQConnection()
                 self._publisher = RabbitMQPublisher(self._connection)
                 # Connect to ensure exchange is declared
-                self._connection.connect()
+                await self._connection.connect()
                 logger.info("Product event publisher initialized")
             except Exception as e:
                 logger.error(f"Failed to initialize RabbitMQ publisher: {e}")
                 return None
         return self._publisher
     
-    def _publish_sync(self, message, routing_key: str):
-        """Synchronous publish method (to be run in thread pool)"""
+    async def publish_event(self, message, routing_key: str):
+        """Publish event asynchronously"""
         try:
-            publisher = self._get_publisher()
+            publisher = await self._get_publisher()
             if publisher is None:
                 logger.debug("RabbitMQ publisher not available, skipping event publish")
                 return
             
-            publisher.publish(message, routing_key=routing_key)
+            await publisher.publish(message, routing_key=routing_key)
         except Exception as e:
-            logger.error(f"Failed to publish event: {e}", exc_info=True)
+            logger.error(f"Error publishing event: {e}", exc_info=True)
             # Don't raise - event publishing failures shouldn't break the main flow
-    
-    async def publish_event(self, message, routing_key: str):
-        """Publish event asynchronously"""
-        try:
-            # Run blocking publish in thread pool
-            loop = asyncio.get_event_loop()
-            await loop.run_in_executor(_executor, self._publish_sync, message, routing_key)
-        except Exception as e:
-            logger.error(f"Error scheduling event publish: {e}", exc_info=True)
     
     async def publish_product_created(self, product: Product, correlation_id: Optional[str] = None):
         """Publish product.created event"""
@@ -203,11 +190,11 @@ class ProductEventPublisher:
         except Exception as e:
             logger.error(f"Failed to create inventory.released event: {e}", exc_info=True)
     
-    def close(self):
+    async def close(self):
         """Close RabbitMQ connection"""
         if self._connection:
             try:
-                self._connection.close()
+                await self._connection.close()
             except Exception as e:
                 logger.error(f"Error closing RabbitMQ connection: {e}")
 
@@ -222,4 +209,3 @@ def get_event_publisher() -> ProductEventPublisher:
     if _event_publisher is None:
         _event_publisher = ProductEventPublisher()
     return _event_publisher
-
