@@ -4630,3 +4630,5 @@
 2025-12-29 01:20:37 - aiormq.connection - DEBUG - Prepare to send ChannelFrame(payload=b'\x08\x00\x00\x00\x00\x00\x00\xce', should_close=False, drain_future=None)
 2025-12-29 01:20:59 - aiormq.connection - DEBUG - Received frame <pamqp.heartbeat.Heartbeat object at 0x7f4590175810> in channel #0 weight=8 on <Connection: "amqp://admin:******@rabbitmq:5672/" at 0x7f4591ade260>
 2025-12-29 01:20:59 - aiormq.connection - DEBUG - Prepare to send ChannelFrame(payload=b'\x08\x00\x00\x00\x00\x00\x00\xce', should_close=False, drain_future=None)
+2025-12-29 01:21:07 - aiormq.connection - DEBUG - Received frame <pamqp.heartbeat.Heartbeat object at 0x7f1f926d4f10> in channel #0 weight=8 on <Connection: "amqp://admin:******@rabbitmq:5672/" at 0x7f1f926defd0>
+2025-12-29 01:21:07 - aiormq.connection - DEBUG - Prepare to send ChannelFrame(payload=b'\x08\x00\x00\x00\x00\x00\x00\xce', should_close=False, drain_future=None)
