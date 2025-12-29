@@ -186,3 +186,61 @@
 2025-12-28 20:01:56 - app.core.database - INFO - Database engine created with pool_size=5, max_overflow=10
 2025-12-28 20:01:56 - app.core.database - INFO - Session factory created
 2025-12-28 20:01:56 - root - INFO - Logging configured for service: auth-service
+2025-12-28 20:03:26 - app.core.database - DEBUG - Connection checked out from pool
+2025-12-28 20:03:26 - app.services.user_service - INFO - User authenticated successfully: ahmadmsvh@gmail.com (ID: 0d911cf9-2282-4785-ab09-874bb951e88e)
+2025-12-28 20:03:26 - app.core.database - DEBUG - Connection returned to pool
+2025-12-28 20:03:26 - app.core.database - DEBUG - Connection checked out from pool
+2025-12-28 20:03:26 - app.repositories.refresh_token_repository - INFO - Refresh token created for user: 0d911cf9-2282-4785-ab09-874bb951e88e
+2025-12-28 20:03:26 - shared.database - INFO - Redis connection established successfully
+2025-12-28 20:03:26 - app.services.session_service - DEBUG - Cached user data for user: 0d911cf9-2282-4785-ab09-874bb951e88e
+2025-12-28 20:03:26 - app.api.v1.auth - INFO - User logged in successfully: ahmadmsvh@gmail.com (ID: 0d911cf9-2282-4785-ab09-874bb951e88e)
+2025-12-28 20:03:26 - app.core.database - DEBUG - Connection returned to pool
+2025-12-28 20:03:34 - root - INFO - Logging configured for service: auth-service
+2025-12-28 20:03:34 - app.core.database - INFO - Database engine created with pool_size=5, max_overflow=10
+2025-12-28 20:03:34 - app.core.database - INFO - Session factory created
+2025-12-28 20:03:34 - root - INFO - Logging configured for service: auth-service
+2025-12-28 20:03:37 - root - INFO - Logging configured for service: auth-service
+2025-12-28 20:03:37 - app.core.database - INFO - Database engine created with pool_size=5, max_overflow=10
+2025-12-28 20:03:37 - app.core.database - INFO - Session factory created
+2025-12-28 20:03:37 - root - INFO - Logging configured for service: auth-service
+2025-12-28 20:03:57 - root - INFO - Logging configured for service: auth-service
+2025-12-28 20:03:57 - app.core.database - INFO - Database engine created with pool_size=5, max_overflow=10
+2025-12-28 20:03:57 - app.core.database - INFO - Session factory created
+2025-12-28 20:03:57 - root - INFO - Logging configured for service: auth-service
+2025-12-28 23:16:06 - root - INFO - Logging configured for service: auth-service
+2025-12-28 23:16:06 - app.core.database - INFO - Database engine created with pool_size=5, max_overflow=10
+2025-12-28 23:16:06 - app.core.database - INFO - Session factory created
+2025-12-28 23:16:07 - root - INFO - Logging configured for service: auth-service
+2025-12-28 23:16:29 - app.core.database - DEBUG - Connection checked out from pool
+2025-12-28 23:16:30 - app.services.user_service - INFO - User authenticated successfully: ahmadmsvh@gmail.com (ID: 0d911cf9-2282-4785-ab09-874bb951e88e)
+2025-12-28 23:16:30 - app.core.database - DEBUG - Connection returned to pool
+2025-12-28 23:16:30 - app.core.database - DEBUG - Connection checked out from pool
+2025-12-28 23:16:30 - app.repositories.refresh_token_repository - INFO - Refresh token created for user: 0d911cf9-2282-4785-ab09-874bb951e88e
+2025-12-28 23:16:30 - shared.database - INFO - Redis connection established successfully
+2025-12-28 23:16:30 - app.services.session_service - DEBUG - Cached user data for user: 0d911cf9-2282-4785-ab09-874bb951e88e
+2025-12-28 23:16:30 - app.api.v1.auth - INFO - User logged in successfully: ahmadmsvh@gmail.com (ID: 0d911cf9-2282-4785-ab09-874bb951e88e)
+2025-12-28 23:16:30 - app.core.database - DEBUG - Connection returned to pool
+2025-12-28 23:56:06 - app.core.database - DEBUG - Connection checked out from pool
+2025-12-28 23:56:06 - app.services.user_service - INFO - User authenticated successfully: ahmadmsvh@gmail.com (ID: 0d911cf9-2282-4785-ab09-874bb951e88e)
+2025-12-28 23:56:06 - app.core.database - DEBUG - Connection returned to pool
+2025-12-28 23:56:06 - app.core.database - DEBUG - Connection checked out from pool
+2025-12-28 23:56:06 - app.repositories.refresh_token_repository - INFO - Refresh token created for user: 0d911cf9-2282-4785-ab09-874bb951e88e
+2025-12-28 23:56:06 - app.services.session_service - DEBUG - Cached user data for user: 0d911cf9-2282-4785-ab09-874bb951e88e
+2025-12-28 23:56:06 - app.api.v1.auth - INFO - User logged in successfully: ahmadmsvh@gmail.com (ID: 0d911cf9-2282-4785-ab09-874bb951e88e)
+2025-12-28 23:56:06 - app.core.database - DEBUG - Connection returned to pool
+2025-12-29 00:00:51 - app.core.database - DEBUG - Connection checked out from pool
+2025-12-29 00:00:51 - app.services.user_service - INFO - User authenticated successfully: ahmadmsvh@gmail.com (ID: 0d911cf9-2282-4785-ab09-874bb951e88e)
+2025-12-29 00:00:51 - app.core.database - DEBUG - Connection returned to pool
+2025-12-29 00:00:51 - app.core.database - DEBUG - Connection checked out from pool
+2025-12-29 00:00:51 - app.repositories.refresh_token_repository - INFO - Refresh token created for user: 0d911cf9-2282-4785-ab09-874bb951e88e
+2025-12-29 00:00:51 - app.services.session_service - DEBUG - Cached user data for user: 0d911cf9-2282-4785-ab09-874bb951e88e
+2025-12-29 00:00:51 - app.api.v1.auth - INFO - User logged in successfully: ahmadmsvh@gmail.com (ID: 0d911cf9-2282-4785-ab09-874bb951e88e)
+2025-12-29 00:00:51 - app.core.database - DEBUG - Connection returned to pool
+2025-12-29 00:13:14 - app.core.database - DEBUG - Connection checked out from pool
+2025-12-29 00:13:14 - app.services.user_service - INFO - User authenticated successfully: ahmadmsvh@gmail.com (ID: 0d911cf9-2282-4785-ab09-874bb951e88e)
+2025-12-29 00:13:14 - app.core.database - DEBUG - Connection returned to pool
+2025-12-29 00:13:14 - app.core.database - DEBUG - Connection checked out from pool
+2025-12-29 00:13:14 - app.repositories.refresh_token_repository - INFO - Refresh token created for user: 0d911cf9-2282-4785-ab09-874bb951e88e
+2025-12-29 00:13:14 - app.services.session_service - DEBUG - Cached user data for user: 0d911cf9-2282-4785-ab09-874bb951e88e
+2025-12-29 00:13:14 - app.api.v1.auth - INFO - User logged in successfully: ahmadmsvh@gmail.com (ID: 0d911cf9-2282-4785-ab09-874bb951e88e)
+2025-12-29 00:13:14 - app.core.database - DEBUG - Connection returned to pool

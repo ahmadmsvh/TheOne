@@ -4,7 +4,6 @@ import asyncio
 
 from app.core.database import get_db_manager
 from app.api.v1.products import bp as products_bp
-from app.utils import run_async
 from app.services.event_consumer import get_event_consumer
 from shared.logging_config import setup_logging, get_logger
 from shared.config import get_settings
@@ -27,11 +26,11 @@ def create_app(config=None, init_db=True):
     def home():
         return jsonify({"message": "product-service-running", "status": "ok"})
     
-    @app.route("/health")
+    @app.route("/health") 
     def health_check():
         try:
             db_manager = get_db_manager()
-            is_healthy = run_async(db_manager.health_check())
+            is_healthy = asyncio.run(db_manager.health_check())
             if is_healthy:
                 return jsonify({
                     "status": "healthy",
@@ -59,18 +58,18 @@ def create_app(config=None, init_db=True):
     
     return app
 
+async def _init_database_async():
+    db_manager = get_db_manager()
+    await db_manager.connect()
+    await db_manager.create_indexes()
 
 def _init_database():
-
     try:
-        db_manager = get_db_manager()
-        run_async(db_manager.connect())
-        run_async(db_manager.create_indexes())
+        asyncio.run(_init_database_async())
         logger.info("Database initialized successfully")
     except Exception as e:
         logger.error(f"Failed to initialize database: {e}")
         raise
-
 
 def _start_event_consumer():
     try:

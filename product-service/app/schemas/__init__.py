@@ -1,10 +1,11 @@
 from typing import Optional, List
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 from datetime import datetime
 from app.models import ProductStatus, ProductImage, ProductVariant, Product
 
 
 class ProductCreateRequest(BaseModel):
+    model_config = ConfigDict(extra='allow')
     name: str = Field(..., min_length=1, max_length=200)
     description: Optional[str] = None
     sku: Optional[str] = Field(None, max_length=100)

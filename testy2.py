@@ -83,3 +83,26 @@
 #     threads.append(t)
 #     t.start()
 
+# import asyncio
+
+# async def fetch_data(delay, name):
+#     print(f"Starting {name}")
+#     await asyncio.sleep(delay)  # Simulates I/O operation
+#     print(f"Finished {name}")
+#     return f"Data from {name}"
+
+# async def main():
+#     # Run tasks concurrently
+#     results = await asyncio.gather(
+#         fetch_data(2, "task1"),
+#         fetch_data(1, "task2"),
+#         fetch_data(3, "task3")
+#     )
+#     print(results)
+#     # await fetch_data(2, "task1")
+#     # await fetch_data(1, "task2")
+#     # await fetch_data(3, "task3")
+
+
+# asyncio.run(main())
+

@@ -1,4 +1,3 @@
-import asyncio
 from typing import Optional
 from contextlib import contextmanager
 from psycopg2 import pool
@@ -10,6 +9,7 @@ from redis.exceptions import ConnectionError as RedisConnectionError
 from shared.config import get_settings
 from shared.logging_config import get_logger
 
+import asyncio
 from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorDatabase
 
 
@@ -97,7 +97,7 @@ class AsyncMongoDBConnection:
         self._loop_id = None
     
     def _is_client_valid_for_current_loop(self) -> bool:
-        if self._client is None:
+        if self._client is None:    
             return False
         try:
             current_loop = None

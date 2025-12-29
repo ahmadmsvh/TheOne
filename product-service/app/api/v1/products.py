@@ -28,28 +28,23 @@ bp = Blueprint("products", __name__, url_prefix="/api/v1/products")
 @async_route
 async def create_product(current_user):
     try:
-        # Get database
         db = await get_database()
         service = ProductService(db)
         
-        # Validate request data
         try:
             product_data = ProductCreateRequest(**request.json)
         except ValidationError as e:
             return jsonify({"error": "Validation error", "details": e.errors()}), 400
         
-        # Get user ID and vendor ID from token
         user_id = current_user.get("sub")
-        vendor_id = current_user.get("sub")  # Use user_id as vendor_id for now
+        vendor_id = current_user.get("sub")
         
-        # Create product
         product = await service.create_product(
             product_data=product_data,
             user_id=user_id,
             vendor_id=vendor_id
         )
         
-        # Return response
         response = ProductResponse.from_model(product)
         return jsonify(response.model_dump()), 201
         
@@ -65,24 +60,20 @@ async def create_product(current_user):
 @async_route
 async def list_products():
     try:
-        # Get query parameters
         page = int(request.args.get("page", 1))
         limit = int(request.args.get("limit", 10))
         category = request.args.get("category")
         search = request.args.get("search")
         status = request.args.get("status")
         
-        # Validate pagination
         if page < 1:
             page = 1
         if limit < 1 or limit > 20:
             limit = 10
         
-        # Get database
         db = await get_database()
         service = ProductService(db)
         
-        # Get products
         result = await service.list_products(
             page=page,
             limit=limit,
@@ -91,7 +82,6 @@ async def list_products():
             status=status
         )
         
-        # Convert to response
         products_response = [ProductResponse.from_model(p).model_dump() for p in result["products"]]
         response = ProductListResponse(
             products=products_response,
@@ -112,17 +102,14 @@ async def list_products():
 @async_route
 async def get_product(product_id):
     try:
-        # Get database
         db = await get_database()
         service = ProductService(db)
         
-        # Get product
         product = await service.get_product(product_id)
         
         if not product:
             return jsonify({"error": "Product not found"}), 404
         
-        # Return response
         response = ProductResponse.from_model(product)
         return jsonify(response.model_dump()), 200
         
@@ -136,21 +123,17 @@ async def get_product(product_id):
 @async_route
 async def update_product(product_id, current_user):
     try:
-        # Get database
         db = await get_database()
         service = ProductService(db)
         
-        # Validate request data
         try:
             product_data = ProductUpdateRequest(**request.json)
         except ValidationError as e:
             return jsonify({"error": "Validation error", "details": e.errors()}), 400
         
-        # Get user ID and roles
         user_id = current_user.get("sub")
         user_roles = current_user.get("roles", [])
         
-        # Update product
         try:
             product = await service.update_product(
                 product_id=product_id,
@@ -166,7 +149,6 @@ async def update_product(product_id, current_user):
         if not product:
             return jsonify({"error": "Product not found"}), 404
         
-        # Return response
         response = ProductResponse.from_model(product)
         return jsonify(response.model_dump()), 200
         
@@ -180,11 +162,9 @@ async def update_product(product_id, current_user):
 @async_route
 async def delete_product(product_id, current_user):
     try:
-        # Get database
         db = await get_database()
         service = ProductService(db)
         
-        # Delete product
         deleted = await service.delete_product(product_id)
         
         if not deleted:
@@ -202,21 +182,17 @@ async def delete_product(product_id, current_user):
 @async_route
 async def adjust_inventory(product_id, current_user):
     try:
-        # Get database
         db = await get_database()
         service = ProductService(db)
         
-        # Validate request data
         try:
             inventory_data = InventoryAdjustRequest(**request.json)
         except ValidationError as e:
             return jsonify({"error": "Validation error", "details": e.errors()}), 400
         
-        # Get user ID and roles
         user_id = current_user.get("sub")
         user_roles = current_user.get("roles", [])
         
-        # Adjust inventory
         try:
             product = await service.adjust_inventory(
                 product_id=product_id,
@@ -232,7 +208,6 @@ async def adjust_inventory(product_id, current_user):
         if not product:
             return jsonify({"error": "Product not found"}), 404
         
-        # Return updated product
         response = ProductResponse.from_model(product)
         return jsonify(response.model_dump()), 200
         
@@ -245,17 +220,14 @@ async def adjust_inventory(product_id, current_user):
 @async_route
 async def get_inventory(product_id):
     try:
-        # Get database
         db = await get_database()
         service = ProductService(db)
         
-        # Get inventory
         inventory = await service.get_inventory(product_id)
         
         if not inventory:
             return jsonify({"error": "Product not found"}), 404
         
-        # Return response
         response = InventoryResponse(**inventory)
         return jsonify(response.model_dump()), 200
         
@@ -269,17 +241,14 @@ async def get_inventory(product_id):
 @async_route
 async def reserve_inventory(product_id, current_user):
     try:
-        # Get database
         db = await get_database()
         service = ProductService(db)
         
-        # Validate request data
         try:
             reserve_data = InventoryReserveRequest(**request.json)
         except ValidationError as e:
             return jsonify({"error": "Validation error", "details": e.errors()}), 400
         
-        # Reserve inventory
         try:
             product = await service.reserve_inventory(
                 product_id=product_id,
@@ -292,7 +261,6 @@ async def reserve_inventory(product_id, current_user):
         if not product:
             return jsonify({"error": "Product not found"}), 404
         
-        # Return updated product
         response = ProductResponse.from_model(product)
         return jsonify(response.model_dump()), 200
         
@@ -306,17 +274,14 @@ async def reserve_inventory(product_id, current_user):
 @async_route
 async def release_inventory(product_id, current_user):
     try:
-        # Get database
         db = await get_database()
         service = ProductService(db)
         
-        # Validate request data
         try:
             release_data = InventoryReleaseRequest(**request.json)
         except ValidationError as e:
             return jsonify({"error": "Validation error", "details": e.errors()}), 400
         
-        # Release inventory
         try:
             product = await service.release_inventory(
                 product_id=product_id,
@@ -329,7 +294,6 @@ async def release_inventory(product_id, current_user):
         if not product:
             return jsonify({"error": "Product not found"}), 404
         
-        # Return updated product
         response = ProductResponse.from_model(product)
         return jsonify(response.model_dump()), 200
         
