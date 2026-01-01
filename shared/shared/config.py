@@ -24,7 +24,7 @@ class MongoSettings(BaseSettings):
     database: str
 
 
-class RedisSettings(BaseSettings):
+class RedisSettings(BaseSettings):  
     model_config = SettingsConfigDict(env_prefix="REDIS_")
     
     url: str
@@ -101,6 +101,5 @@ class Settings(BaseSettings):
 
 @lru_cache()
 def get_settings() -> Settings:
-    """Get cached settings instance"""
     return Settings()
 
