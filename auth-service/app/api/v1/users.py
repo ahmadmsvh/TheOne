@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, status, Depends
+from fastapi import APIRouter, status, Depends
 from sqlalchemy.orm import Session
 from uuid import UUID
 
@@ -8,8 +8,7 @@ from app.models import User
 from app.schemas import (
     AssignRoleRequest,
     AssignRoleResponse,
-    RemoveRoleResponse,
-    UserResponse
+    RemoveRoleResponse
 )
 from app.services.role_service import RoleService
 from app.services.user_service import UserService

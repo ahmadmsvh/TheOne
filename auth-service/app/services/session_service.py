@@ -85,7 +85,6 @@ class SessionService:
             logger.error(f"Failed to invalidate cache for user {user_id}: {e}", exc_info=True)
             return False
     
-    # ========== Token Blacklist Methods ==========
     
     def _get_blacklist_key(self, token: str) -> str:
         token_hash = hashlib.sha256(token.encode()).hexdigest()

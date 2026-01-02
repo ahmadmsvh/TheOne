@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, status, Depends
+from fastapi import APIRouter, status, Depends
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
@@ -6,8 +6,7 @@ from app.dependencies import require_auth, require_role, get_role_service
 from app.models import User
 from app.schemas import (
     RoleCreateRequest,
-    RoleCreateResponse,
-    RoleResponse,
+    RoleCreateResponse, 
     RolesListResponse
 )
 from app.services.role_service import RoleService

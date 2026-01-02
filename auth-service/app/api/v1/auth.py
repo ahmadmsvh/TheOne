@@ -8,7 +8,6 @@ from app.core.security import create_access_token, create_refresh_token, decode_
 from app.schemas import (
     UserRegisterRequest, 
     UserRegisterResponse, 
-    UserResponse,
     LoginRequest,
     LoginResponse,
     TokenResponse,

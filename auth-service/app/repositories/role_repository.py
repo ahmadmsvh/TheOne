@@ -9,7 +9,7 @@ from shared.logging_config import get_logger
 logger = get_logger(__name__, "auth-service")
 
 
-class RoleRepository:   
+class RoleRepository:
     
     def __init__(self, db: Session):
 
@@ -57,7 +57,6 @@ class RoleRepository:
     def assign_role_to_user(self, user_id: UUID, role_id: int) -> bool:
 
         try:
-            # Check if assignment already exists
             existing = self.db.query(UserRole).filter(
                 UserRole.user_id == user_id,
                 UserRole.role_id == role_id
