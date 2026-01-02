@@ -8,10 +8,7 @@ from app.models import User
 from app.repositories.user_repository import UserRepository
 from app.schemas import UserRegisterRequest, UserResponse
 from app.core.security import hash_password, verify_password
-import sys
-from pathlib import Path
 
-# Add shared to path
 from shared.logging_config import get_logger
 
 logger = get_logger(__name__, "auth-service")
@@ -24,7 +21,6 @@ class UserService:
         self.user_repository = UserRepository(db)
     
     def register_user(self, user_data: UserRegisterRequest) -> User:
-        # Check if email already exists
         if self.user_repository.email_exists(user_data.email):
             logger.warning(f"Registration attempt with existing email: {user_data.email}")
             raise HTTPException(
@@ -32,7 +28,6 @@ class UserService:
                 detail="Email already registered"
             )
         
-        # Hash the password
         try:
             hashed_password = hash_password(user_data.password)
         except Exception as e:
@@ -41,8 +36,7 @@ class UserService:
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="Failed to process password"
             )
-        
-        # Create user
+                
         try:
             new_user = self.user_repository.create(
                 email=user_data.email,

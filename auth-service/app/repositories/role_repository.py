@@ -4,18 +4,13 @@ from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
 
 from app.models import Role, User, UserRole
-import sys
-from pathlib import Path
 
-# Add shared to path
-sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent / "shared"))
 from shared.logging_config import get_logger
 
 logger = get_logger(__name__, "auth-service")
 
 
 class RoleRepository:
-    """Repository for role database operations"""
     
     def __init__(self, db: Session):
 
@@ -63,7 +58,6 @@ class RoleRepository:
     def assign_role_to_user(self, user_id: UUID, role_id: int) -> bool:
 
         try:
-            # Check if assignment already exists
             existing = self.db.query(UserRole).filter(
                 UserRole.user_id == user_id,
                 UserRole.role_id == role_id

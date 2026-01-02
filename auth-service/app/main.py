@@ -11,13 +11,11 @@ app = FastAPI(
     version="1.0.0"
 )
 
-# Include API routers
 app.include_router(api_router, prefix="/api/v1")
 
 
 @app.get("/")
-def read_root():
-    """Root endpoint"""
+def read_root():    
     return {"message": "auth-service"}
 
 
@@ -102,7 +100,6 @@ async def dark_swagger_ui_html():
     return HTMLResponse(content=html_content)
 
 
-# Alternative: Better dark theme with more custom CSS
 @app.get("/dark-docs", include_in_schema=False)
 async def better_dark_swagger():
     """

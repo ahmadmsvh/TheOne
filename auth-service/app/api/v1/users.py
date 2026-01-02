@@ -1,11 +1,6 @@
-from fastapi import APIRouter, HTTPException, status, Depends
+from fastapi import APIRouter, status, Depends
 from sqlalchemy.orm import Session
 from uuid import UUID
-import sys
-from pathlib import Path
-
-# Add shared to path
-sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent / "shared"))
 
 from app.core.database import get_db
 from app.dependencies import require_auth, require_role
@@ -13,8 +8,7 @@ from app.models import User
 from app.schemas import (
     AssignRoleRequest,
     AssignRoleResponse,
-    RemoveRoleResponse,
-    UserResponse
+    RemoveRoleResponse
 )
 from app.services.role_service import RoleService
 from app.services.user_service import UserService
