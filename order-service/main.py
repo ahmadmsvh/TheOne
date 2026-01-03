@@ -11,12 +11,11 @@ from shared.config import get_settings
 settings = get_settings()
 setup_logging(service_name=os.getenv("SERVICE_NAME", "order-service"), log_level=settings.app.log_level)
 logger = get_logger(__name__, os.getenv("SERVICE_NAME", "order-service"))
+logger.debug(f'log level: {settings.app.log_level}')
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Lifespan context manager for startup and shutdown"""
-    # Startup
     logger.info("Starting order-service...")
     try:
         init_db()
@@ -27,7 +26,6 @@ async def lifespan(app: FastAPI):
     
     yield
     
-    # Shutdown
     logger.info("Shutting down order-service...")
     await close_product_client()
     logger.info("Order service shut down complete")
@@ -40,7 +38,6 @@ app = FastAPI(
     lifespan=lifespan
 )
 
-# Register routers
 app.include_router(orders.router)
 
 
