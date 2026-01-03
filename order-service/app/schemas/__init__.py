@@ -6,20 +6,17 @@ from app.models import OrderStatus
 
 
 class CartItem(BaseModel):
-    """Cart item for order creation"""
     product_id: str = Field(..., description="Product ID")
     quantity: int = Field(..., gt=0, description="Quantity")
 
 
 class OrderCreateRequest(BaseModel):
-    """Request schema for creating an order"""
     items: List[CartItem] = Field(..., min_items=1, description="Cart items")
 
 
 class OrderItemResponse(BaseModel):
-    """Order item response"""
     id: UUID
-    product_id: str  # MongoDB ObjectId as string
+    product_id: str
     sku: str
     quantity: int
     price: float
@@ -29,7 +26,6 @@ class OrderItemResponse(BaseModel):
 
 
 class OrderResponse(BaseModel):
-    """Order response"""
     id: UUID
     user_id: UUID
     status: OrderStatus

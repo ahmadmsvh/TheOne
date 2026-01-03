@@ -10,7 +10,6 @@ logger = get_logger(__name__, "order-service")
 
 
 class OrderRepository:
-    """Repository for order database operations"""
     
     def __init__(self, db: Session):
         self.db = db
@@ -21,7 +20,6 @@ class OrderRepository:
         total: float,
         status: OrderStatus = OrderStatus.PENDING
     ) -> Order:
-        """Create a new order"""
         try:
             order = Order(
                 user_id=user_id,
@@ -29,7 +27,7 @@ class OrderRepository:
                 status=status
             )
             self.db.add(order)
-            self.db.flush()  # Flush to get the order ID
+            self.db.flush()
             return order
         except SQLAlchemyError as e:
             logger.error(f"Error creating order: {e}")
@@ -39,12 +37,11 @@ class OrderRepository:
     def create_order_item(
         self,
         order_id: UUID,
-        product_id: str,  # MongoDB ObjectId as string
+        product_id: str,
         sku: str,
         quantity: int,
         price: float
     ) -> OrderItem:
-        """Create an order item"""
         try:
             order_item = OrderItem(
                 order_id=order_id,
@@ -61,7 +58,6 @@ class OrderRepository:
             raise
     
     def get_order_by_id(self, order_id: UUID) -> Optional[Order]:
-        """Get order by ID"""
         try:
             return self.db.query(Order).filter(Order.id == order_id).first()
         except SQLAlchemyError as e:
@@ -69,7 +65,6 @@ class OrderRepository:
             raise
     
     def get_orders_by_user_id(self, user_id: UUID) -> List[Order]:
-        """Get all orders for a user"""
         try:
             return self.db.query(Order).filter(Order.user_id == user_id).all()
         except SQLAlchemyError as e:
@@ -77,7 +72,6 @@ class OrderRepository:
             raise
     
     def commit(self):
-        """Commit transaction"""
         try:
             self.db.commit()
         except SQLAlchemyError as e:
@@ -86,6 +80,5 @@ class OrderRepository:
             raise
     
     def rollback(self):
-        """Rollback transaction"""
         self.db.rollback()
 

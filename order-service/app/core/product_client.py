@@ -1,6 +1,5 @@
 import asyncio
 from typing import Dict, Any, List, Optional
-from uuid import UUID
 import httpx
 from fastapi import HTTPException
 from shared.logging_config import get_logger
@@ -9,15 +8,12 @@ from shared.config import get_settings
 logger = get_logger(__name__, "order-service")
 settings = get_settings()
 
-# Product service base URL - in Docker network
 PRODUCT_SERVICE_URL = "http://product-service:5001"
-# For local development, can be overridden via environment variable
 import os
 PRODUCT_SERVICE_URL = os.getenv("PRODUCT_SERVICE_URL", PRODUCT_SERVICE_URL)
 
 
 class ProductServiceClient:
-    """HTTP client for Product service with timeout and retry logic"""
     
     def __init__(self, base_url: str = PRODUCT_SERVICE_URL, timeout: float = 10.0, max_retries: int = 3):
         self.base_url = base_url.rstrip('/')
@@ -26,7 +22,6 @@ class ProductServiceClient:
         self._client: Optional[httpx.AsyncClient] = None
     
     async def _get_client(self) -> httpx.AsyncClient:
-        """Get or create HTTP client"""
         if self._client is None or self._client.is_closed:
             self._client = httpx.AsyncClient(
                 base_url=self.base_url,
@@ -36,7 +31,6 @@ class ProductServiceClient:
         return self._client
     
     async def close(self):
-        """Close HTTP client"""
         if self._client and not self._client.is_closed:
             await self._client.aclose()
             self._client = None
@@ -47,14 +41,12 @@ class ProductServiceClient:
         url: str,
         **kwargs
     ) -> httpx.Response:
-        """Make HTTP request with retry logic"""
         client = await self._get_client()
         
         last_exception = None
         for attempt in range(self.max_retries):
             try:
                 response = await client.request(method, url, **kwargs)
-                # Only retry on server errors (5xx) or connection errors
                 if response.status_code < 500:
                     return response
                 
@@ -62,7 +54,7 @@ class ProductServiceClient:
                     f"Product service returned {response.status_code} on attempt {attempt + 1}/{self.max_retries}"
                 )
                 if attempt < self.max_retries - 1:
-                    await asyncio.sleep(2 ** attempt)  # Exponential backoff
+                    await asyncio.sleep(2 ** attempt)
                     last_exception = None
                 else:
                     response.raise_for_status()
@@ -72,7 +64,7 @@ class ProductServiceClient:
                     f"Product service connection error on attempt {attempt + 1}/{self.max_retries}: {e}"
                 )
                 if attempt < self.max_retries - 1:
-                    await asyncio.sleep(2 ** attempt)  # Exponential backoff
+                    await asyncio.sleep(2 ** attempt)
                 else:
                     logger.error(f"Product service unavailable after {self.max_retries} attempts")
                     raise HTTPException(
@@ -86,7 +78,6 @@ class ProductServiceClient:
         return response
     
     async def get_product(self, product_id: str, token: str) -> Dict[str, Any]:
-        """Get product by ID"""
         try:
             response = await self._request_with_retry(
                 "GET",
@@ -105,7 +96,6 @@ class ProductServiceClient:
             raise
     
     async def get_inventory(self, product_id: str, token: str) -> Dict[str, Any]:
-        """Get inventory information for a product"""
         try:
             response = await self._request_with_retry(
                 "GET",
@@ -130,7 +120,6 @@ class ProductServiceClient:
         order_id: str,
         token: str
     ) -> Dict[str, Any]:
-        """Reserve inventory for a product"""
         try:
             response = await self._request_with_retry(
                 "POST",
@@ -163,7 +152,6 @@ class ProductServiceClient:
         cart_items: List[Dict[str, Any]],
         token: str
     ) -> List[Dict[str, Any]]:
-        """Validate cart items and check inventory availability"""
         validated_items = []
         
         for item in cart_items:
@@ -176,10 +164,8 @@ class ProductServiceClient:
                 raise ValueError(f"Invalid quantity for product {product_id}: {quantity}")
             
             try:
-                # Get product details
                 product = await self.get_product(product_id, token)
                 
-                # Get inventory
                 inventory = await self.get_inventory(product_id, token)
                 
                 available_stock = inventory.get("available_stock", 0)
@@ -196,8 +182,7 @@ class ProductServiceClient:
                     "price": product.get("price"),
                     "quantity": quantity
                 })
-            except ValueError as e:
-                # Re-raise validation errors
+            except ValueError as e: 
                 raise
             except Exception as e:
                 logger.error(f"Error validating cart item {product_id}: {e}")
@@ -206,20 +191,17 @@ class ProductServiceClient:
         return validated_items
 
 
-# Global client instance
 _product_client: Optional[ProductServiceClient] = None
 
 
 async def get_product_client() -> ProductServiceClient:
-    """Get global product service client instance"""
     global _product_client
     if _product_client is None:
         _product_client = ProductServiceClient()
     return _product_client
 
 
-async def close_product_client():
-    """Close global product service client"""
+async def close_product_client():  
     global _product_client
     if _product_client:
         await _product_client.close()

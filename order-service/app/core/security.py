@@ -11,7 +11,6 @@ JWT_ALGORITHM = settings.app.jwt_algorithm
 
 
 def decode_token(token: str) -> Optional[Dict[str, Any]]:
-    """Decode JWT token and return payload"""
     try:
         payload = jwt.decode(token, JWT_SECRET_KEY, algorithms=[JWT_ALGORITHM])
         return payload
