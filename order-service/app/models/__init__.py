@@ -41,7 +41,7 @@ class OrderItem(Base):
     
     id = Column(PGUUID(as_uuid=True), primary_key=True, default=uuid4)
     order_id = Column(PGUUID(as_uuid=True), ForeignKey("orders.id", ondelete="CASCADE"), nullable=False, index=True)
-    product_id = Column(PGUUID(as_uuid=True), nullable=False, index=True)
+    product_id = Column(String(255), nullable=False, index=True)  # MongoDB ObjectId as string
     sku = Column(String(100), nullable=False)
     quantity = Column(Integer, nullable=False)
     price = Column(Numeric(10, 2), nullable=False)

@@ -1,0 +1,39 @@
+2026-01-03 05:53:20 - root - INFO - Logging configured for service: order-service
+2026-01-03 05:53:20 - app.core.database - INFO - Database engine created with pool_size=5, max_overflow=10
+2026-01-03 05:53:20 - app.core.database - INFO - Session factory created
+2026-01-03 05:53:21 - root - INFO - Logging configured for service: order-service
+2026-01-03 05:53:21 - app.core.database - INFO - Database engine created with pool_size=5, max_overflow=10
+2026-01-03 05:53:21 - app.core.database - INFO - Session factory created
+2026-01-03 05:53:22 - root - INFO - Logging configured for service: order-service
+2026-01-03 05:53:22 - app.core.database - INFO - Database engine created with pool_size=5, max_overflow=10
+2026-01-03 05:53:22 - app.core.database - INFO - Session factory created
+2026-01-03 05:53:23 - root - INFO - Logging configured for service: order-service
+2026-01-03 05:53:23 - app.core.database - INFO - Database engine created with pool_size=5, max_overflow=10
+2026-01-03 05:53:23 - app.core.database - INFO - Session factory created
+2026-01-03 05:53:25 - root - INFO - Logging configured for service: order-service
+2026-01-03 05:53:25 - app.core.database - INFO - Database engine created with pool_size=5, max_overflow=10
+2026-01-03 05:53:25 - app.core.database - INFO - Session factory created
+2026-01-03 05:53:28 - root - INFO - Logging configured for service: order-service
+2026-01-03 05:53:28 - app.core.database - INFO - Database engine created with pool_size=5, max_overflow=10
+2026-01-03 05:53:28 - app.core.database - INFO - Session factory created
+2026-01-03 05:53:32 - root - INFO - Logging configured for service: order-service
+2026-01-03 05:53:32 - app.core.database - INFO - Database engine created with pool_size=5, max_overflow=10
+2026-01-03 05:53:32 - app.core.database - INFO - Session factory created
+2026-01-03 05:53:39 - root - INFO - Logging configured for service: order-service
+2026-01-03 05:53:39 - app.core.database - INFO - Database engine created with pool_size=5, max_overflow=10
+2026-01-03 05:53:39 - app.core.database - INFO - Session factory created
+2026-01-03 05:53:53 - root - INFO - Logging configured for service: order-service
+2026-01-03 05:53:53 - app.core.database - INFO - Database engine created with pool_size=5, max_overflow=10
+2026-01-03 05:53:53 - app.core.database - INFO - Session factory created
+2026-01-03 05:54:19 - root - INFO - Logging configured for service: order-service
+2026-01-03 05:54:19 - app.core.database - INFO - Database engine created with pool_size=5, max_overflow=10
+2026-01-03 05:54:19 - app.core.database - INFO - Session factory created
+2026-01-03 05:55:01 - root - INFO - Logging configured for service: order-service
+2026-01-03 05:55:01 - app.core.database - INFO - Database engine created with pool_size=5, max_overflow=10
+2026-01-03 05:55:01 - app.core.database - INFO - Session factory created
+2026-01-03 05:55:01 - root - INFO - Logging configured for service: order-service
+2026-01-03 05:55:01 - main - INFO - Starting order-service...
+2026-01-03 05:55:01 - app.core.database - DEBUG - Connection checked out from pool
+2026-01-03 05:55:01 - app.core.database - DEBUG - Connection returned to pool
+2026-01-03 05:55:01 - app.core.database - INFO - Database tables created successfully
+2026-01-03 05:55:01 - main - INFO - Database initialized
