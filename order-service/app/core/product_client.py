@@ -1,16 +1,17 @@
 import asyncio
+import os
 from typing import Dict, Any, List, Optional
+
 import httpx
 from fastapi import HTTPException
+
 from shared.logging_config import get_logger
 from shared.config import get_settings
 
-logger = get_logger(__name__, "order-service")
+logger = get_logger(__name__, os.getenv("SERVICE_NAME"))
 settings = get_settings()
 
-PRODUCT_SERVICE_URL = "http://product-service:5001"
-import os
-PRODUCT_SERVICE_URL = os.getenv("PRODUCT_SERVICE_URL", PRODUCT_SERVICE_URL)
+PRODUCT_SERVICE_URL = os.getenv("PRODUCT_SERVICE_URL", "http://product-service:5001")
 
 
 class ProductServiceClient:

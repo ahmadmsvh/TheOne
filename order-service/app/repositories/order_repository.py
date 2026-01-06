@@ -30,7 +30,6 @@ class OrderRepository:
             self.db.add(order)
             self.db.flush()
             
-            # Create initial status history entry
             status_history = OrderStatusHistory(
                 order_id=order.id,
                 status=status
@@ -123,7 +122,6 @@ class OrderRepository:
             old_status = order.status
             order.status = new_status
             
-            # Create status history entry
             status_history = OrderStatusHistory(
                 order_id=order_id,
                 status=new_status
@@ -148,7 +146,6 @@ class OrderRepository:
             
             order.status = OrderStatus.CANCELLED
             
-            # Create status history entry
             status_history = OrderStatusHistory(
                 order_id=order_id,
                 status=OrderStatus.CANCELLED

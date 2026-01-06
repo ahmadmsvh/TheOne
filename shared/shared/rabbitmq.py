@@ -140,10 +140,7 @@ class RabbitMQConsumer:
         channel = await self.connection.get_channel()
         exchange = await self.connection.get_exchange()
         
-        self._queue = await channel.declare_queue(
-            self.queue_name,
-            durable=True
-        )
+        self._queue = await channel.declare_queue(self.queue_name, durable=True)
         
         for routing_key in self.routing_keys:
             await self._queue.bind(exchange, routing_key=routing_key)

@@ -3,7 +3,7 @@ from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.orm import Session
 from typing import Dict, Any
 from uuid import UUID
-
+import os
 from app.core.database import get_db
 from app.core.dependencies import require_auth, require_role, require_any_role
 from app.core.product_client import get_product_client, ProductServiceClient
@@ -24,7 +24,7 @@ from app.schemas import (
 from app.models import OrderStatus
 from shared.logging_config import get_logger
 
-logger = get_logger(__name__, "order-service")
+logger = get_logger(__name__, os.getenv("SERVICE_NAME"))
 
 router = APIRouter(prefix="/api/v1/orders", tags=["orders"])
 security = HTTPBearer()
@@ -68,8 +68,7 @@ async def create_order(
         token = credentials.credentials
         
         cart_items = [
-            {"product_id": item.product_id, "quantity": item.quantity}
-            for item in order_data.items
+            {"product_id": item.product_id, "quantity": item.quantity} for item in order_data.items if item.product_id and item.quantity
         ]
         
         order = await order_service.create_order(
@@ -135,7 +134,6 @@ async def list_orders(
         user_roles = current_user.get("roles", [])
         user_id = current_user["user_id"]
         
-        # Customers see only their own orders, Admins see all orders
         filter_user_id = None if "Admin" in user_roles else user_id
         
         result = order_service.list_orders(

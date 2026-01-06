@@ -22,13 +22,11 @@ async def lifespan(app: FastAPI):
         init_db()
         logger.info("Database initialized")
         
-        # Start event consumer for inventory events
         try:
             await start_event_consumer()
             logger.info("Event consumer started")
         except Exception as e:
             logger.error(f"Error starting event consumer: {e}", exc_info=True)
-            # Don't fail startup if event consumer fails - service can still function
     except Exception as e:
         logger.error(f"Error initializing database: {e}")
         raise

@@ -20,27 +20,6 @@ services:
       timeout: 5s
       retries: 5
     restart: unless-stopped
-
-  # postgres-order:
-  #   image: postgres:15-alpine
-  #   container_name: postgres-order
-  #   environment:
-  #     POSTGRES_USER: postgres
-  #     POSTGRES_PASSWORD: postgres
-  #     POSTGRES_DB: theone_order_db
-  #   ports:
-  #     - "5433:5432"
-  #   volumes:
-  #     - postgres_data_order:/var/lib/postgresql/data
-  #   networks:
-  #     - theone-network
-  #   healthcheck:
-  #     test: ["CMD-SHELL", "pg_isready -U postgres"]
-  #     interval: 10s
-  #     timeout: 5s
-  #     retries: 5
-  #   restart: unless-stopped
-
   pgadmin:
     image: dpage/pgadmin4:latest
     container_name: pgadmin

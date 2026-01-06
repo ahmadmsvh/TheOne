@@ -61,7 +61,7 @@ class OrderService:
                 status=OrderStatus.PENDING
             )
             
-            reserved_products = []
+            reserved_products = []  
             try:
                 for item in validated_items:
                     product_id = item["product_id"]
@@ -73,7 +73,7 @@ class OrderService:
                         order_id=str(order.id),
                         token=token
                     )
-                    reserved_products.append(product_id)
+                    reserved_products.append((product_id, quantity))
                     
                     self.repository.create_order_item(
                         order_id=order.id,
@@ -90,6 +90,41 @@ class OrderService:
             except Exception as e:
                 logger.error(f"Error reserving inventory for order {order.id}: {e}")
                 self.repository.rollback()
+                
+                if reserved_products:
+                    logger.info(f"Releasing {len(reserved_products)} reserved products for order {order.id}")
+                    release_errors = []
+                    for product_id, quantity in reserved_products:
+                        try:
+                            await self.product_client.release_inventory(
+                                product_id=product_id,
+                                quantity=quantity,
+                                order_id=str(order.id),
+                                token=token
+                            )
+                            logger.info(
+                                f"Released inventory for order {order.id}, "
+                                f"product {product_id}, quantity {quantity}"
+                            )
+                        except Exception as release_error:
+                            release_errors.append({
+                                "product_id": product_id,
+                                "quantity": quantity,
+                                "error": str(release_error)
+                            })
+                            logger.error(
+                                f"Failed to release inventory for order {order.id}, "
+                                f"product {product_id}: {release_error}",
+                                exc_info=True
+                            )
+                    
+                    if release_errors:
+                        logger.error(
+                            f"ORDER CREATION FAILED - INVENTORY RELEASE FAILED - Manual review required. "
+                            f"Order ID: {order.id}, Original error: {e}, "
+                            f"Inventory release errors: {release_errors}"
+                        )
+                
                 raise
             
         except Exception as e:

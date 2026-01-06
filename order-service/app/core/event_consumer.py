@@ -1,8 +1,8 @@
 import json
 import asyncio
+import os
 from typing import Optional, Dict, Any
 from uuid import UUID
-import os
 
 import aio_pika
 from shared.logging_config import get_logger
@@ -18,20 +18,19 @@ from app.core.product_client import ProductServiceClient
 from app.models import OrderStatus, Payment
 from app.core.events import publish_order_cancelled_event
 
-logger = get_logger(__name__, "order-service")
+logger = get_logger(__name__, os.getenv("SERVICE_NAME"))
 
 MAX_RETRIES = 3
 RETRY_DELAY_BASE = 2
 
 
 class InventoryEventConsumer:
-    """Event consumer for inventory events, specifically inventory.unavailable"""
     
     def __init__(self):
         self.settings = get_settings()
         self._consumer: Optional[RabbitMQConsumer] = None
         self._connection: Optional[RabbitMQConnection] = None
-        self._service_name = "order-service"
+        self._service_name = os.getenv("SERVICE_NAME")
         self._running = False
         self._consumer_task: Optional[asyncio.Task] = None
     
@@ -47,15 +46,11 @@ class InventoryEventConsumer:
         return self._connection
     
     def _get_db_session(self):
-        """Get database session"""
         db_manager = get_db_manager()
         return db_manager.get_session()
     
     async def _handle_inventory_unavailable(self, message_data: Dict[str, Any]) -> bool:
-        """
-        Handle inventory.unavailable event.
-        Cancels the order and refunds payment if applicable.
-        """
+
         try:
             inventory_message = InventoryMessage(**message_data)
             order_id_str = inventory_message.order_id
@@ -158,7 +153,6 @@ class InventoryEventConsumer:
         handler: callable,
         max_retries: int = MAX_RETRIES
     ) -> bool:
-        """Process message with retry logic"""
         for attempt in range(max_retries):
             try:
                 return await handler(message_data)
@@ -248,7 +242,6 @@ class InventoryEventConsumer:
             raise
     
     async def start(self):
-        """Start the event consumer"""
         if self._running:
             logger.warning("Event consumer is already running")
             return
@@ -262,7 +255,6 @@ class InventoryEventConsumer:
             raise
     
     async def stop(self):
-        """Stop the event consumer"""
         if not self._running:
             return
         
@@ -289,7 +281,6 @@ class InventoryEventConsumer:
 
 
 class InventoryEventRabbitMQConsumer(RabbitMQConsumer):
-    """Custom RabbitMQ consumer for inventory events"""
     
     def __init__(self, queue_name: str, routing_keys: list, connection, event_handler):
         super().__init__(queue_name, routing_keys, connection, callback=None)
