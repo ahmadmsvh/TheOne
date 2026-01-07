@@ -1,7 +1,3 @@
-"""
-Authentication utilities for reading user information from nginx gateway headers.
-Nginx validates tokens and sets X-User-Id, X-User-Email, and X-User-Roles headers.
-"""
 import os
 from functools import wraps
 from typing import Optional, Dict, Any, List
@@ -18,10 +14,7 @@ logger = get_logger(__name__, os.getenv("SERVICE_NAME", "product-service"))
 
 
 def get_current_user() -> Optional[Dict[str, Any]]:
-    """
-    Extract user information from headers set by nginx auth_request module.
-    Nginx validates tokens and sets X-User-Id, X-User-Email, and X-User-Roles headers.
-    """
+
     user_id = request.headers.get("X-User-Id")
     user_email = request.headers.get("X-User-Email", "")
     user_roles_str = request.headers.get("X-User-Roles", "")

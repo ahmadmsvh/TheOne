@@ -62,7 +62,6 @@ async def create_order(
 
     try:
         user_id = current_user["user_id"]
-        # Extract token from Authorization header for service-to-service calls
         auth_header = request.headers.get("Authorization", "")
         token = auth_header.replace("Bearer ", "") if auth_header.startswith("Bearer ") else ""
         
@@ -195,7 +194,6 @@ async def get_order(
     try:
         order = order_service.get_order_by_id(order_id)
         
-        # Check if user has access to this order
         user_roles = current_user.get("roles", [])
         user_id = current_user["user_id"]
         
@@ -205,10 +203,8 @@ async def get_order(
                 detail="Access denied. You can only view your own orders."
             )
         
-        # Refresh to load relationships
         db.refresh(order)
         
-        # Sort status history by timestamp
         status_history = sorted(order.status_history, key=lambda x: x.timestamp)
         
         return OrderDetailResponse(
@@ -269,11 +265,9 @@ async def update_order_status(
     db: Session = Depends(get_db)
 ):
     try:
-        # Get the order to capture old status
         order = order_service.get_order_by_id(order_id)
         old_status = order.status
         
-        # Update the status
         updated_order = order_service.update_order_status(
             order_id=order_id,
             new_status=status_data.status
@@ -281,7 +275,6 @@ async def update_order_status(
         
         db.refresh(updated_order)
         
-        # Publish status change event
         from app.core.events import publish_order_status_updated_event
         await publish_order_status_updated_event(updated_order, old_status)
         
@@ -334,7 +327,6 @@ async def cancel_order(
     db: Session = Depends(get_db)
 ):
     try:
-        # Check if user has access to this order
         order = order_service.get_order_by_id(order_id)
         user_roles = current_user.get("roles", [])
         user_id = current_user["user_id"]
@@ -345,12 +337,10 @@ async def cancel_order(
                 detail="Access denied. You can only cancel your own orders."
             )
         
-        # Cancel the order
         cancelled_order = order_service.cancel_order(order_id)
         
         db.refresh(cancelled_order)
         
-        # Publish cancellation event
         from app.core.events import publish_order_cancelled_event
         await publish_order_cancelled_event(cancelled_order)
         
@@ -407,7 +397,6 @@ async def process_payment(
     db: Session = Depends(get_db)
 ):
     try:
-        # Check if user has access to this order
         order = order_service.get_order_by_id(order_id)
         user_roles = current_user.get("roles", [])
         user_id = current_user["user_id"]
@@ -418,11 +407,9 @@ async def process_payment(
                 detail="Access denied. You can only pay for your own orders."
             )
         
-        # Extract token from Authorization header for service-to-service calls
         auth_header = request.headers.get("Authorization", "")
         token = auth_header.replace("Bearer ", "") if auth_header.startswith("Bearer ") else ""
         
-        # Process payment
         payment_result = await order_service.process_payment(
             order_id=order_id,
             idempotency_key=payment_data.idempotency_key,
@@ -431,11 +418,9 @@ async def process_payment(
             token=token
         )
         
-        # Refresh order to get updated status
         db.refresh(order)
         order = order_service.get_order_by_id(order_id)
         
-        # Publish order.paid event if payment succeeded
         if payment_result["status"] == "succeeded":
             from app.core.events import publish_order_paid_event
             await publish_order_paid_event(
@@ -444,7 +429,6 @@ async def process_payment(
                 payment_method=payment_result.get("payment_method")
             )
         
-        # Get payment record for response
         payment = payment_repository.get_payment_by_idempotency_key(payment_data.idempotency_key)
         
         if not payment:
@@ -477,4 +461,3 @@ async def process_payment(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="An error occurred while processing the payment"
         )
-
