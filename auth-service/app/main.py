@@ -3,6 +3,7 @@ from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from starlette.responses import HTMLResponse
 from sqlalchemy.exc import SQLAlchemyError
+import json
 
 from app.api.v1 import api_router
 from app.core.error_handlers import (
@@ -48,8 +49,10 @@ async def dark_swagger_ui_html(request: Request):
     """
     Custom dark theme Swagger UI with inline CSS
     """
-    # Determine the correct OpenAPI URL dynamically using JavaScript
-    # This handles both direct access and access through nginx gateway
+    # Fetch the OpenAPI schema server-side and embed it directly
+    # This avoids needing to make a separate HTTP request that might be blocked by nginx
+    openapi_schema = app.openapi()
+    openapi_schema_json = json.dumps(openapi_schema)
     
     html_content = f"""
     <!DOCTYPE html>
@@ -93,17 +96,11 @@ async def dark_swagger_ui_html(request: Request):
         <script src="https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/5.10.5/swagger-ui-bundle.js"></script>
         <script src="https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/5.10.5/swagger-ui-standalone-preset.js"></script>
         <script>
-            // Dynamically determine the OpenAPI URL based on the current path
-            const currentPath = window.location.pathname;
-            let openapiUrl = '/openapi.json';
-            
-            // If accessed through nginx gateway at /auth/custom-docs, use /auth/openapi.json
-            if (currentPath.includes('/auth/custom-docs')) {{
-                openapiUrl = '/auth/openapi.json';
-            }}
+            // Embed OpenAPI schema directly to avoid HTTP request issues
+            const openapiSpec = {openapi_schema_json};
             
             const ui = SwaggerUIBundle({{
-                url: openapiUrl,
+                spec: openapiSpec,
                 dom_id: '#swagger-ui',
                 presets: [
                     SwaggerUIBundle.presets.apis,
