@@ -29,18 +29,7 @@ class PaymentService:
         payment_method: Optional[str] = None,
         **kwargs
     ) -> Dict[str, Any]:
-        """
-        Process payment for an order.
-        
-        Args:
-            order_id: Order ID
-            amount: Payment amount
-            payment_method: Payment method (e.g., "card", "stripe")
-            **kwargs: Additional payment parameters
-            
-        Returns:
-            Dict with payment result including transaction_id and status
-        """
+
         if self.use_stripe:
             return await self._process_stripe_payment(order_id, amount, payment_method, **kwargs)
         else:
@@ -53,17 +42,11 @@ class PaymentService:
         payment_method: Optional[str] = None,
         **kwargs
     ) -> Dict[str, Any]:
-        """
-        Mock payment gateway for portfolio/demo purposes.
-        Always succeeds for demo purposes.
-        """
         logger.info(f"Processing mock payment for order {order_id}, amount: {amount}")
         
-        # Simulate payment processing delay
         import asyncio
         await asyncio.sleep(0.1)
         
-        # Generate a mock transaction ID
         transaction_id = f"mock_txn_{order_id}_{int(asyncio.get_event_loop().time() * 1000)}"
         
         logger.info(f"Mock payment successful for order {order_id}, transaction_id: {transaction_id}")
@@ -83,18 +66,14 @@ class PaymentService:
         payment_method: Optional[str] = None,
         **kwargs
     ) -> Dict[str, Any]:
-        """
-        Process payment using Stripe test mode.
-        """
+
         try:
             import stripe
             
             stripe.api_key = self.stripe_secret_key
             
-            # Convert amount to cents for Stripe
             amount_cents = int(float(amount) * 100)
             
-            # Create payment intent
             payment_intent = stripe.PaymentIntent.create(
                 amount=amount_cents,
                 currency="usd",
@@ -104,13 +83,10 @@ class PaymentService:
                 }
             )
             
-            # For test mode, we'll simulate confirmation
-            # In production, you'd handle webhooks for actual payment confirmation
             if payment_intent.status == "succeeded":
                 transaction_id = payment_intent.id
                 status = "succeeded"
             else:
-                # Confirm the payment intent for test mode
                 payment_intent = stripe.PaymentIntent.confirm(payment_intent.id)
                 transaction_id = payment_intent.id
                 status = payment_intent.status
@@ -138,17 +114,7 @@ class PaymentService:
         amount: Optional[Decimal] = None,
         **kwargs
     ) -> Dict[str, Any]:
-        """
-        Refund a payment.
-        
-        Args:
-            transaction_id: Original transaction ID to refund
-            amount: Refund amount (partial refund if provided, full refund if None)
-            **kwargs: Additional refund parameters
-            
-        Returns:
-            Dict with refund result including refund_id and status
-        """
+
         if self.use_stripe:
             return await self._refund_stripe_payment(transaction_id, amount, **kwargs)
         else:
@@ -160,17 +126,12 @@ class PaymentService:
         amount: Optional[Decimal] = None,
         **kwargs
     ) -> Dict[str, Any]:
-        """
-        Mock refund for portfolio/demo purposes.
-        Always succeeds for demo purposes.
-        """
+
         logger.info(f"Processing mock refund for transaction {transaction_id}, amount: {amount}")
         
-        # Simulate refund processing delay
         import asyncio
         await asyncio.sleep(0.1)
         
-        # Generate a mock refund ID
         refund_id = f"mock_refund_{transaction_id}_{int(asyncio.get_event_loop().time() * 1000)}"
         
         logger.info(f"Mock refund successful for transaction {transaction_id}, refund_id: {refund_id}")
@@ -189,18 +150,14 @@ class PaymentService:
         amount: Optional[Decimal] = None,
         **kwargs
     ) -> Dict[str, Any]:
-        """
-        Refund payment using Stripe.
-        """
+
         try:
             import stripe
             
             stripe.api_key = self.stripe_secret_key
             
-            # Convert amount to cents for Stripe if provided
             amount_cents = int(float(amount) * 100) if amount else None
             
-            # Create refund
             refund_params = {"payment_intent": transaction_id}
             if amount_cents:
                 refund_params["amount"] = amount_cents

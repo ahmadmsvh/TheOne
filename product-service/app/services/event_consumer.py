@@ -9,7 +9,7 @@ from shared.logging_config import get_logger
 from shared.config import get_settings
 from shared.rabbitmq import RabbitMQConsumer, RabbitMQConnection
 from shared.models import OrderMessage, MessageType
-from app.core.database import get_db_manager
+from app.core.database import get_database
 from app.repositories.product_repository import ProductRepository
 
 logger = get_logger(__name__, os.getenv("SERVICE_NAME"))
@@ -38,9 +38,6 @@ class OrderEventConsumer:
                 raise
         return self._connection
     
-    def _get_db_manager(self):
-        return get_db_manager()
-    
     async def _handle_order_completed(self, message_data: Dict[str, Any]) -> bool:
 
         try:
@@ -50,9 +47,7 @@ class OrderEventConsumer:
             
             logger.info(f"Processing order.completed event for order {order_id}")
             
-            db_manager = self._get_db_manager()
-            await db_manager.connect()
-            database = await db_manager.get_database()
+            database = await get_database()
             repository = ProductRepository(database)
             
             processed_items = []
@@ -113,6 +108,79 @@ class OrderEventConsumer:
             logger.error(f"Error handling order.completed event: {e}", exc_info=True)
             return False
     
+    async def _handle_order_paid(self, message_data: Dict[str, Any]) -> bool:
+        """
+        Handle order.paid event - deduct stock immediately when payment is received.
+        This converts reserved stock to actual stock deduction.
+        """
+        try:
+            order_message = OrderMessage(**message_data)
+            order_id = order_message.order_id
+            items = order_message.items
+            
+            logger.info(f"Processing order.paid event for order {order_id}")
+            
+            database = await get_database()
+            repository = ProductRepository(database)
+            
+            processed_items = []
+            errors = []
+            
+            for item in items:
+                try:
+                    product_id = item.get("product_id")
+                    quantity = item.get("quantity", 0)
+                    
+                    if not product_id or quantity <= 0:
+                        logger.warning(f"Invalid item in order {order_id}: {item}")
+                        continue
+                        
+                    updated_product = await repository.complete_order_deduction(
+                        product_id=str(product_id),
+                        quantity=int(quantity)
+                    )
+                    
+                    if updated_product:
+                        processed_items.append({
+                            "product_id": product_id,
+                            "quantity": quantity,
+                            "new_stock": updated_product.stock,
+                            "new_reserved_stock": updated_product.reserved_stock
+                        })
+                        logger.info(
+                            f"Completed stock deduction for paid order - product {product_id}: "
+                            f"deducted {quantity}, new stock: {updated_product.stock}, "
+                            f"new reserved: {updated_product.reserved_stock}"
+                        )
+                    else:
+                        errors.append(f"Product {product_id} not found")
+                        logger.error(f"Product {product_id} not found for order {order_id}")
+                        
+                except ValueError as e:
+                    error_msg = f"Validation error for product {item.get('product_id')}: {str(e)}"
+                    errors.append(error_msg)
+                    logger.error(error_msg)
+                except Exception as e:
+                    error_msg = f"Error processing item {item.get('product_id')}: {str(e)}"
+                    errors.append(error_msg)
+                    logger.error(error_msg, exc_info=True)
+            
+            if errors:
+                logger.warning(
+                    f"Order {order_id} paid with {len(errors)} errors: {errors}"
+                )
+                return len(processed_items) > 0
+            
+            logger.info(
+                f"Successfully processed order.paid for order {order_id}: "
+                f"{len(processed_items)} items processed"
+            )
+            return True
+            
+        except Exception as e:
+            logger.error(f"Error handling order.paid event: {e}", exc_info=True)
+            return False
+    
     async def _handle_order_cancelled(self, message_data: Dict[str, Any]) -> bool:
         try:
             order_message = OrderMessage(**message_data)
@@ -121,9 +189,7 @@ class OrderEventConsumer:
             
             logger.info(f"Processing order.cancelled event for order {order_id}")
             
-            db_manager = self._get_db_manager()
-            await db_manager.connect()
-            database = await db_manager.get_database()
+            database = await get_database()
             repository = ProductRepository(database)
             
             processed_items = []
@@ -224,7 +290,9 @@ class OrderEventConsumer:
             logger.info(f"Received message: {message_data.get('message_id', 'unknown')}, type: {message_type}, routing_key: {routing_key}")
             
             handler = None
-            if message_type == MessageType.ORDER_COMPLETED.value or routing_key == "order.completed":
+            if message_type == MessageType.ORDER_PAID.value or routing_key == "order.paid":
+                handler = self._handle_order_paid
+            elif message_type == MessageType.ORDER_COMPLETED.value or routing_key == "order.completed":
                 handler = self._handle_order_completed
             elif message_type == MessageType.ORDER_CANCELLED.value or routing_key == "order.cancelled":
                 handler = self._handle_order_cancelled
@@ -259,7 +327,7 @@ class OrderEventConsumer:
     async def _create_consumer(self) -> RabbitMQConsumer:
         connection = await self._get_connection()
         
-        routing_keys = ["order.completed", "order.cancelled"]
+        routing_keys = ["order.paid", "order.completed", "order.cancelled"]
         
         consumer = OrderEventRabbitMQConsumer(
             queue_name="order_events",

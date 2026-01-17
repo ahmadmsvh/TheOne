@@ -11,7 +11,6 @@ from shared.logging_config import get_logger
 
 logger = get_logger(__name__, "order-service")
 
-# Valid status transitions
 STATUS_TRANSITIONS = {
     OrderStatus.PENDING: [OrderStatus.CONFIRMED, OrderStatus.PAID, OrderStatus.CANCELLED],
     OrderStatus.CONFIRMED: [OrderStatus.PAID, OrderStatus.SHIPPED, OrderStatus.CANCELLED],
@@ -163,8 +162,7 @@ class OrderService:
             "pages": (total + limit - 1) // limit if total > 0 else 0
         }
     
-    def validate_status_transition(self, current_status: OrderStatus, new_status: OrderStatus) -> bool:
-        """Validate if status transition is allowed"""
+    def validate_status_transition(self, current_status: OrderStatus, new_status: OrderStatus) -> bool:     
         allowed_transitions = STATUS_TRANSITIONS.get(current_status, [])
         return new_status in allowed_transitions
     
@@ -175,11 +173,9 @@ class OrderService:
     ) -> Order:
         order = self.get_order_by_id(order_id)
         
-        # Don't validate transition if status hasn't changed
         if order.status == new_status:
             return order
         
-        # Validate status transition
         if not self.validate_status_transition(order.status, new_status):
             raise ValueError(
                 f"Invalid status transition from {order.status.value} to {new_status.value}. "
@@ -216,22 +212,10 @@ class OrderService:
         payment_method: Optional[str] = None,
         token: Optional[str] = None
     ) -> Dict[str, Any]:
-        """
-        Process payment for an order with idempotency support.
-        
-        Args:
-            order_id: Order ID
-            idempotency_key: Unique key to prevent duplicate payments
-            payment_amount: Payment amount (defaults to order total)
-            payment_method: Payment method (e.g., 'card', 'stripe')
-            
-        Returns:
-            Dict with payment information including payment_id and transaction_id
-        """
+
         if not self.payment_repository:
             raise ValueError("Payment repository is required for payment processing")
         
-        # Check for existing payment with same idempotency key (idempotency check)
         existing_payment = self.payment_repository.get_payment_by_idempotency_key(idempotency_key)
         if existing_payment:
             logger.info(f"Payment with idempotency key {idempotency_key} already exists. Returning existing payment.")
@@ -246,26 +230,21 @@ class OrderService:
                 "order_status": order.status.value
             }
         
-        # Get order
         order = self.get_order_by_id(order_id)
         
-        # Validate order can be paid
         if order.status == OrderStatus.PAID:
             raise ValueError(f"Order {order_id} is already paid")
         
         if order.status == OrderStatus.CANCELLED:
             raise ValueError(f"Cannot pay for cancelled order {order_id}")
         
-        # Use provided amount or order total
         amount = Decimal(str(payment_amount)) if payment_amount else Decimal(str(order.total))
         
-        # Validate amount matches order total (allow small tolerance for rounding)
         if abs(float(amount) - float(order.total)) > 0.01:
             raise ValueError(
                 f"Payment amount {float(amount)} does not match order total {float(order.total)}"
             )
         
-        # Create payment record with pending status
         payment = self.payment_repository.create_payment(
             order_id=order_id,
             idempotency_key=idempotency_key,
@@ -275,21 +254,18 @@ class OrderService:
         )
         
         try:
-            # Process payment through payment service
             payment_result = await self.payment_service.process_payment(
                 order_id=order_id,
                 amount=amount,
                 payment_method=payment_method
             )
             
-            # Update payment record with transaction details
             payment = self.payment_repository.update_payment_status(
                 payment_id=payment.id,
                 status=payment_result["status"],
                 transaction_id=payment_result["transaction_id"]
             )
             
-            # Update order status to PAID if payment succeeded
             if payment_result["status"] == "succeeded":
                 updated_order = self.repository.update_order_status(order_id, OrderStatus.PAID)
                 self.repository.commit()
@@ -306,21 +282,17 @@ class OrderService:
                     "order_status": updated_order.status.value
                 }
             else:
-                # Payment failed - implement saga pattern: release inventory
                 self.payment_repository.commit()
                 payment_error = ValueError(f"Payment processing failed with status: {payment_result['status']}")
                 
-                # Saga rollback: release inventory
                 await self._rollback_order_inventory(order_id, token, payment_error)
                 raise payment_error
                 
         except Exception as e:
-            # Rollback on error - implement saga pattern: release inventory
             self.payment_repository.rollback()
             self.repository.rollback()
             logger.error(f"Error processing payment for order {order_id}: {e}")
             
-            # Saga rollback: release inventory if payment failed after inventory was reserved
             await self._rollback_order_inventory(order_id, token, e)
             raise
     
@@ -330,18 +302,12 @@ class OrderService:
         token: Optional[str],
         original_error: Exception
     ):
-        """
-        Saga pattern rollback: Release inventory when payment fails.
-        If inventory release fails, log for manual review.
-        """
         try:
-            # Get order to find items
             order = self.repository.get_order_by_id(order_id)
             if not order:
                 logger.warning(f"Order {order_id} not found for inventory rollback")
                 return
             
-            # Only release if order has items and is not already cancelled/delivered
             if not order.items or order.status in [OrderStatus.CANCELLED, OrderStatus.DELIVERED]:
                 logger.info(f"Order {order_id} has no items or is already {order.status.value}, skipping inventory release")
                 return
@@ -353,7 +319,6 @@ class OrderService:
                 )
                 return
             
-            # Release inventory for each item
             release_errors = []
             for item in order.items:
                 try:
@@ -380,7 +345,6 @@ class OrderService:
                     )
             
             if release_errors:
-                # Log for manual review
                 logger.error(
                     f"PAYMENT FAILURE - INVENTORY RELEASE FAILED - Manual review required. "
                     f"Order ID: {order_id}, Payment error: {original_error}, "
@@ -388,7 +352,6 @@ class OrderService:
                 )
             
         except Exception as rollback_error:
-            # Log for manual review if rollback itself fails
             logger.error(
                 f"PAYMENT FAILURE - INVENTORY ROLLBACK FAILED - Manual review required. "
                 f"Order ID: {order_id}, Payment error: {original_error}, "

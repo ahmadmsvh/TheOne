@@ -9,13 +9,13 @@ Base = declarative_base()
 
 
 class OrderStatus(str, enum.Enum):
-    PENDING = "pending"
-    CONFIRMED = "confirmed"
-    PROCESSING = "processing"
-    PAID = "paid"
-    SHIPPED = "shipped"
-    DELIVERED = "delivered"
-    CANCELLED = "cancelled"
+    PENDING = "PENDING"
+    CONFIRMED = "CONFIRMED"
+    PROCESSING = "PROCESSING"
+    PAID = "PAID"
+    SHIPPED = "SHIPPED"
+    DELIVERED = "DELIVERED"
+    CANCELLED = "CANCELLED"
 
 
 class Order(Base):
