@@ -1,0 +1,23 @@
+FROM python:3.11-slim
+
+WORKDIR /app
+
+RUN apt-get update && apt-get install -y \
+    gcc \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY notification-service/requirements.txt /app/notification-service/requirements.txt
+RUN pip install --no-cache-dir -r notification-service/requirements.txt
+
+COPY notification-service /app/notification-service
+COPY shared /app/shared
+RUN pip install --no-cache-dir -e /app/shared
+
+WORKDIR /app/notification-service
+
+CMD ["celery", "-A", "app.celery_app", "worker", \
+     "--loglevel=info", \
+     "--concurrency=4", \
+     "--max-tasks-per-child=1000", \
+     "--time-limit=300", \
+     "--soft-time-limit=240"]
