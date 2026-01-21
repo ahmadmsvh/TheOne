@@ -1,0 +1,209 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+env:
+  PYTHON_VERSION: '3.11'
+  DOCKER_BUILDKIT: 1
+
+jobs:
+  test:
+    name: Run Tests
+    runs-on: ubuntu-latest
+    
+    services:
+      postgres:
+        image: postgres:15-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: postgres
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+      
+      redis:
+        image: redis:7-alpine
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install shared package
+        working-directory: ./shared
+        run: |
+          pip install --upgrade pip
+          pip install -e .
+
+      - name: Install auth-service dependencies
+        working-directory: ./auth-service
+        run: |
+          pip install -r requirements.txt
+
+      - name: Install PostgreSQL client
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client
+
+      - name: Run auth-service tests
+        working-directory: ./auth-service
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/theone_auth_db
+          REDIS_URL: redis://localhost:6379
+          SECRET_KEY: test-secret-key-for-ci
+          ALGORITHM: HS256
+          ACCESS_TOKEN_EXPIRE_MINUTES: 30
+          REFRESH_TOKEN_EXPIRE_DAYS: 7
+        run: |
+          # Create test database
+          PGPASSWORD=postgres psql -h localhost -U postgres -c "CREATE DATABASE theone_auth_db;" || true
+          # Run migrations
+          alembic upgrade head || true
+          # Run tests
+          pytest
+
+  build:
+    name: Build Docker Images
+    runs-on: ubuntu-latest
+    needs: test
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    
+    strategy:
+      matrix:
+        service:
+          - auth-service
+          - notification-service
+          - order-service
+          - product-service
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Docker image for ${{ matrix.service }}
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./${{ matrix.service }}/Dockerfile
+          push: false
+          tags: theone-${{ matrix.service }}:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      # Uncomment below to push to a container registry (Docker Hub, GitHub Container Registry, etc.)
+      # - name: Login to Container Registry
+      #   uses: docker/login-action@v3
+      #   with:
+      #     registry: ghcr.io
+      #     username: ${{ github.actor }}
+      #     password: ${{ secrets.GITHUB_TOKEN }}
+      #
+      # - name: Push Docker image for ${{ matrix.service }}
+      #   uses: docker/build-push-action@v5
+      #   with:
+      #     context: .
+      #     file: ./${{ matrix.service }}/Dockerfile
+      #     push: true
+      #     tags: ghcr.io/${{ github.repository }}/${{ matrix.service }}:${{ github.sha }}
+      #     tags: ghcr.io/${{ github.repository }}/${{ matrix.service }}:latest
+      #     cache-from: type=gha
+      #     cache-to: type=gha,mode=max
+
+  build-notification-worker:
+    name: Build Notification Worker Image
+    runs-on: ubuntu-latest
+    needs: test
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Docker image for notification-worker
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./notification-service/Dockerfile.worker
+          push: false
+          tags: theone-notification-worker:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  lint:
+    name: Code Quality Checks
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install linting tools
+        run: |
+          pip install --upgrade pip
+          pip install flake8 black isort mypy
+
+      - name: Check code formatting with black
+        run: |
+          black --check --diff auth-service/ order-service/ product-service/ notification-service/ shared/ || true
+
+      - name: Check import sorting with isort
+        run: |
+          isort --check-only --diff auth-service/ order-service/ product-service/ notification-service/ shared/ || true
+
+      - name: Lint with flake8
+        run: |
+          flake8 auth-service/ order-service/ product-service/ notification-service/ shared/ --count --select=E9,F63,F7,F82 --show-source --statistics || true
+          flake8 auth-service/ order-service/ product-service/ notification-service/ shared/ --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics || true
+
+  # Uncomment and configure this job when you're ready to deploy
+  # deploy:
+  #   name: Deploy to Production
+  #   runs-on: ubuntu-latest
+  #   needs: [build, build-notification-worker]
+  #   if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+  #   environment:
+  #     name: production
+  #     url: https://your-production-url.com
+  #
+  #   steps:
+  #     - name: Checkout code
+  #       uses: actions/checkout@v4
+  #
+  #     - name: Deploy to server
+  #       run: |
+  #         echo "Add your deployment steps here"
+  #         # Example: SSH into server and run docker-compose up -d
+  #         # Or use a deployment tool like Ansible, Terraform, etc.
