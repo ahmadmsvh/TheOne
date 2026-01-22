@@ -73,8 +73,15 @@ jobs:
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/theone_auth_db
           REDIS_URL: redis://localhost:6379
-          SECRET_KEY: test-secret-key-for-ci
-          ALGORITHM: HS256
+          APP_NAME: TheOne
+          ENVIRONMENT: test
+          DEBUG: "false"
+          LOG_LEVEL: INFO
+          SERVICE_NAME: auth-service
+          JSON_OUTPUT: "false"
+          LOG_FILE: ""
+          JWT_SECRET_KEY: test-secret-key-for-ci
+          JWT_ALGORITHM: HS256
           ACCESS_TOKEN_EXPIRE_MINUTES: 30
           REFRESH_TOKEN_EXPIRE_DAYS: 7
         run: |
