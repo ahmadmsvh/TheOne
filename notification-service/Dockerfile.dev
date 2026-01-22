@@ -4,7 +4,7 @@ WORKDIR /app
 
 COPY notification-service /app/notification-service
 
-RUN pip install --no-cache-dir -r notification-service/requirements.txt
+RUN pip install --no-cache-dir -r notification-service/requirements.txt -r notification-service/requirements-dev.txt
 
 COPY shared /app/shared
 RUN pip install --no-cache-dir -e /app/shared

@@ -4,7 +4,7 @@ WORKDIR /app
 
 COPY auth-service /app/auth-service
 
-RUN pip install --no-cache-dir -r auth-service/requirements.txt
+RUN pip install --no-cache-dir -r auth-service/requirements.txt -r auth-service/requirements-dev.txt
 
 COPY shared /app/shared
 RUN pip install --no-cache-dir -e /app/shared

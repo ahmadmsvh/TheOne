@@ -9,7 +9,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 COPY product-service /app/product-service
 
-RUN pip install --no-cache-dir -r product-service/requirements.txt
+RUN pip install --no-cache-dir -r product-service/requirements.txt -r product-service/requirements-dev.txt
 
 COPY shared /app/shared
 RUN pip install --no-cache-dir -e /app/shared

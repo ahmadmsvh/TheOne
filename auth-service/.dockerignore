@@ -17,4 +17,9 @@ build/
 .vscode
 *.log
 .DS_Store
+tests/
+*.md
+pytest.ini
+coverage.xml
+htmlcov/
 

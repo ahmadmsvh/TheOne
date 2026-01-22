@@ -4,7 +4,7 @@ WORKDIR /app
 
 COPY order-service /app/order-service
 
-RUN pip install --no-cache-dir -r order-service/requirements.txt
+RUN pip install --no-cache-dir -r order-service/requirements.txt -r order-service/requirements-dev.txt
 
 COPY shared /app/shared
 RUN pip install --no-cache-dir -e /app/shared

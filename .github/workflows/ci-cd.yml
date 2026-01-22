@@ -3,7 +3,7 @@ name: CI/CD Pipeline
 on:
   push:
     branches:
-      - main
+      - cicd
   pull_request:
     branches:
       - main
@@ -60,7 +60,7 @@ jobs:
       - name: Install auth-service dependencies
         working-directory: ./auth-service
         run: |
-          pip install -r requirements.txt
+          pip install -r requirements.txt -r requirements-dev.txt
 
       - name: Install PostgreSQL client
         run: |

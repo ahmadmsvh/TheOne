@@ -9,3 +9,4 @@ Werkzeug==3.1.4
 celery==5.3.4
 kombu==5.3.4
 redis==5.0.1
+gunicorn==23.0.0
