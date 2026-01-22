@@ -1,15 +1,10 @@
-"""
-Integration tests for /auth/register endpoint
-"""
 import pytest
 from fastapi import status
 
 
 class TestRegisterEndpoint:
-    """Tests for POST /api/v1/auth/register"""
     
     def test_register_success(self, client, sample_user_data):
-        """Test successful user registration"""
         response = client.post(
             "/api/v1/auth/register",
             json=sample_user_data
@@ -23,7 +18,6 @@ class TestRegisterEndpoint:
         assert "id" in data["user"]
         assert "created_at" in data["user"]
         assert "updated_at" in data["user"]
-        # Password should not be in response
         assert "password" not in data["user"]
         assert "password_hash" not in data["user"]
     
@@ -45,7 +39,6 @@ class TestRegisterEndpoint:
     #     assert response2.status_code == status.HTTP_400_BAD_REQUEST
     
     def test_register_invalid_email(self, client):
-        """Test registration with invalid email format"""
         invalid_data = {
             "email": "not-an-email",
             "password": "TestPassword123!"
@@ -59,7 +52,6 @@ class TestRegisterEndpoint:
         assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
     
     def test_register_weak_password(self, client):
-        """Test registration with weak password"""
         weak_password_data = {
             "email": "test@example.com",
             "password": "weak"  # Too short, no uppercase, no digit
@@ -115,7 +107,6 @@ class TestRegisterEndpoint:
     #     assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
     
     def test_register_password_too_short(self, client):
-        """Test registration with password too short"""
         invalid_data = {
             "email": "test@example.com",
             "password": "Test1!"  # Less than 8 characters
@@ -129,7 +120,6 @@ class TestRegisterEndpoint:
         assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
     
     def test_register_missing_email(self, client):
-        """Test registration with missing email field"""
         invalid_data = {
             "password": "TestPassword123!"
         }
@@ -142,7 +132,6 @@ class TestRegisterEndpoint:
         assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
     
     def test_register_missing_password(self, client):
-        """Test registration with missing password field"""
         invalid_data = {
             "email": "test@example.com"
         }
@@ -155,7 +144,6 @@ class TestRegisterEndpoint:
         assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
     
     def test_register_empty_body(self, client):
-        """Test registration with empty request body"""
         response = client.post(
             "/api/v1/auth/register",
             json={}
@@ -164,7 +152,6 @@ class TestRegisterEndpoint:
         assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
     
     def test_register_validates_password_strength(self, client):
-        """Test that password validation works correctly"""
         valid_passwords = [
             "TestPassword123!",
             "MySecurePass1@",

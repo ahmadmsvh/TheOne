@@ -11,6 +11,7 @@ on:
 env:
   PYTHON_VERSION: '3.11'
   DOCKER_BUILDKIT: 1
+  JWT_SECRET_KEY: ${{ secrets.JWT_SECRET_KEY }}
 
 jobs:
   test:

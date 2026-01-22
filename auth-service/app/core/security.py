@@ -2,17 +2,21 @@ import bcrypt
 import jwt
 from datetime import datetime, timedelta, timezone
 from typing import Optional, Dict, Any
-
+import os
 from shared.logging_config import get_logger
 from shared.config import get_settings
 
 settings = get_settings()
 logger = get_logger(__name__, "auth-service")
 
-JWT_SECRET_KEY = settings.app.jwt_secret_key
-JWT_ALGORITHM = settings.app.jwt_algorithm
-ACCESS_TOKEN_EXPIRE_MINUTES = int(settings.app.access_token_expire_minutes)
-REFRESH_TOKEN_EXPIRE_DAYS = int(settings.app.refresh_token_expire_days)
+# JWT_SECRET_KEY = settings.app.jwt_secret_key
+JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY")
+# JWT_ALGORITHM = settings.app.jwt_algorithm
+JWT_ALGORITHM = os.getenv("JWT_ALGORITHM")
+# ACCESS_TOKEN_EXPIRE_MINUTES = int(settings.app.access_token_expire_minutes)
+ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", 15))
+# REFRESH_TOKEN_EXPIRE_DAYS = int(settings.app.refresh_token_expire_days)
+REFRESH_TOKEN_EXPIRE_DAYS = int(os.getenv("REFRESH_TOKEN_EXPIRE_DAYS", 7))
 
 
 def hash_password(password: str) -> str:
