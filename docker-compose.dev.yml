@@ -145,6 +145,7 @@ services:
       - RABBITMQ_QUEUE_PREFIX=notification-service
       - RABBITMQ_PREFETCH_COUNT=10
       - REDIS_URL=redis://redis:6379
+      - GOOGLE_APPLICATION_CREDENTIALS=/app/shared/shared/theone-35860-3d9030db5a46.json
       - GCP_PROJECT_ID=theone-35860
       - GCP_SECRET_NAMES=theone_secrets
       - GCP_SECRET_PREFIX=

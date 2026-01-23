@@ -29,6 +29,6 @@ RUN if [ -f /app/product-service/scripts/crontab ]; then \
 RUN touch /tmp/cleanup_logs_cron.log
 
 # Start cron service in the background and run the main application
-CMD ["sh", "-c", "cron & exec gunicorn main:app --host 0.0.0.0 --port 5001 --workers 4 --threads 2 --reload"]
+CMD ["sh", "-c", "cron & exec gunicorn main:app --bind 0.0.0.0:5001 --workers 4 --threads 2 --reload"]
 
 
