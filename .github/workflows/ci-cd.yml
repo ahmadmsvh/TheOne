@@ -259,23 +259,24 @@ jobs:
           cache-to: type=gha,mode=max
 
       # Uncomment below to push to a container registry (Docker Hub, GitHub Container Registry, etc.)
-      # - name: Login to Container Registry
-      #   uses: docker/login-action@v3
-      #   with:
-      #     registry: ghcr.io
-      #     username: ${{ github.actor }}
-      #     password: ${{ secrets.GITHUB_TOKEN }}
-      #
-      # - name: Push Docker image for ${{ matrix.service }}
-      #   uses: docker/build-push-action@v5
-      #   with:
-      #     context: .
-      #     file: ./${{ matrix.service }}/Dockerfile
-      #     push: true
-      #     tags: ghcr.io/${{ github.repository }}/${{ matrix.service }}:${{ github.sha }}
-      #     tags: ghcr.io/${{ github.repository }}/${{ matrix.service }}:latest
-      #     cache-from: type=gha
-      #     cache-to: type=gha,mode=max
+      - name: Login to Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Push Docker image for ${{ matrix.service }}
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./${{ matrix.service }}/Dockerfile
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository }}/${{ matrix.service }}:${{ github.sha }}
+            ghcr.io/${{ github.repository }}/${{ matrix.service }}:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
   build-notification-worker:
     name: Build Notification Worker Image
