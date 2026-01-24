@@ -258,7 +258,7 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      # Uncomment below to push to a container registry (Docker Hub, GitHub Container Registry, etc.)
+      # Uncomment below to push to a containr registry (Docker Hub, GitHub Container Registry, etc.)
       - name: Login to Container Registry
         uses: docker/login-action@v3
         with:
