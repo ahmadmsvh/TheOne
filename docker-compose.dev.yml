@@ -113,7 +113,6 @@ services:
     environment:
       - SERVICE_NAME=auth-service 
       - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/theone_auth_db
-      - REDIS_URL=redis://redis:6379
       - GOOGLE_APPLICATION_CREDENTIALS=/app/shared/shared/theone-35860-3d9030db5a46.json
       - GCP_PROJECT_ID=theone-35860
       - GCP_SECRET_NAMES=theone_secrets
@@ -140,11 +139,8 @@ services:
       - "5002:5002"
     environment:
       - SERVICE_NAME=notification-service
-      - RABBITMQ_URL=amqp://admin:admin@rabbitmq:5672/
       - RABBITMQ_EXCHANGE=ecommerce.events
       - RABBITMQ_QUEUE_PREFIX=notification-service
-      - RABBITMQ_PREFETCH_COUNT=10
-      - REDIS_URL=redis://redis:6379
       - GOOGLE_APPLICATION_CREDENTIALS=/app/shared/shared/theone-35860-3d9030db5a46.json
       - GCP_PROJECT_ID=theone-35860
       - GCP_SECRET_NAMES=theone_secrets
@@ -169,11 +165,8 @@ services:
     container_name: notification-worker
     environment:
       - SERVICE_NAME=notification-service
-      - RABBITMQ_URL=amqp://admin:admin@rabbitmq:5672/
       - RABBITMQ_EXCHANGE=ecommerce.events
       - RABBITMQ_QUEUE_PREFIX=notification-service
-      - RABBITMQ_PREFETCH_COUNT=10
-      - REDIS_URL=redis://redis:6379
       - GOOGLE_APPLICATION_CREDENTIALS=/app/shared/shared/theone-35860-3d9030db5a46.json
       - GCP_PROJECT_ID=theone-35860
       - GCP_SECRET_NAMES=theone_secrets
@@ -203,18 +196,12 @@ services:
     environment:
       - SERVICE_NAME=product-service
       - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/theone_db
-      - MONGODB_URL=mongodb://admin:admin@mongodb:27017/theone_db?authSource=admin
-      - MONGODB_DATABASE=theone_db
-      - REDIS_URL=redis://redis:6379
       - GOOGLE_APPLICATION_CREDENTIALS=/app/shared/shared/theone-35860-3d9030db5a46.json
       - GCP_PROJECT_ID=theone-35860
       - GCP_SECRET_NAMES=theone_secrets
       - GCP_SECRET_PREFIX=
       - USE_GCP_SECRETS=true
-      # - RABBITMQ_URL=amqp://admin:admin@rabbitmq:5672/
-      # - RABBITMQ_EXCHANGE=ecommerce.events
-      # - RABBITMQ_QUEUE_PREFIX=product-service
-      # - RABBITMQ_PREFETCH_COUNT=10
+
     depends_on:
       postgres:
         condition: service_healthy
@@ -241,8 +228,6 @@ services:
     environment:
       - SERVICE_NAME=order-service
       - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/theone_order_db
-      - RABBITMQ_URL=amqp://admin:admin@rabbitmq:5672/
-      - REDIS_URL=redis://redis:6379
       - GOOGLE_APPLICATION_CREDENTIALS=/app/shared/shared/theone-35860-3d9030db5a46.json
       - GCP_PROJECT_ID=theone-35860
       - GCP_SECRET_NAMES=theone_secrets
