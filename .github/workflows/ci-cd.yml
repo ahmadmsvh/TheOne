@@ -525,7 +525,36 @@ jobs:
             
             # Wait for databases to be healthy
             echo "Waiting for databases to be ready..."
-            sleep 20
+            sleep 15
+            
+            # Check health status and wait up to 2 minutes for all services to be healthy
+            echo "Checking service health..."
+            for i in {1..24}; do
+              echo "Health check attempt $i/24..."
+              
+              # Check each service
+              POSTGRES_HEALTH=$(sudo docker inspect --format='{{.State.Health.Status}}' postgres 2>/dev/null || echo "starting")
+              MONGODB_HEALTH=$(sudo docker inspect --format='{{.State.Health.Status}}' mongodb 2>/dev/null || echo "starting")
+              REDIS_HEALTH=$(sudo docker inspect --format='{{.State.Health.Status}}' redis 2>/dev/null || echo "starting")
+              RABBITMQ_HEALTH=$(sudo docker inspect --format='{{.State.Health.Status}}' rabbitmq 2>/dev/null || echo "starting")
+              
+              echo "  Postgres: $POSTGRES_HEALTH"
+              echo "  MongoDB: $MONGODB_HEALTH"
+              echo "  Redis: $REDIS_HEALTH"
+              echo "  RabbitMQ: $RABBITMQ_HEALTH"
+              
+              if [ "$POSTGRES_HEALTH" = "healthy" ] && [ "$MONGODB_HEALTH" = "healthy" ] && [ "$REDIS_HEALTH" = "healthy" ] && [ "$RABBITMQ_HEALTH" = "healthy" ]; then
+                echo "All infrastructure services are healthy!"
+                break
+              fi
+              
+              if [ $i -eq 24 ]; then
+                echo "WARNING: Some services are not healthy after 2 minutes"
+                sudo docker compose -f docker-compose.prod.yml logs postgres mongodb redis rabbitmq
+              fi
+              
+              sleep 5
+            done
             
             # Initialize PostgreSQL databases if they don't exist
             sudo docker exec postgres psql -U "$PG_USER" -tc "SELECT 1 FROM pg_database WHERE datname = 'theone_auth_db'" | grep -q 1 || \
