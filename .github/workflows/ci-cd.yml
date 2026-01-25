@@ -439,6 +439,10 @@ jobs:
         run: |
           ssh -i ~/.ssh/id_rsa ${{ secrets.GCP_SSH_USER }}@${{ secrets.GCP_VM_IP }} << 'EOF'
             set -e
+            
+            # Set up PATH for non-interactive shell to find docker
+            export PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+            
             cd ~/theone
             
             # Login to GitHub Container Registry
@@ -503,6 +507,10 @@ jobs:
           
           ssh -i ~/.ssh/id_rsa ${{ secrets.GCP_SSH_USER }}@${{ secrets.GCP_VM_IP }} << 'EOF'
             set -e
+            
+            # Set up PATH for non-interactive shell to find docker
+            export PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+            
             cd ~/theone
             
             echo "=== Container Status ==="
