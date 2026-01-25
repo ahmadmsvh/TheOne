@@ -229,7 +229,6 @@ jobs:
           - notification-service
           - order-service
           - product-service
-          - notification-worker
 
     steps:
       - name: Checkout code
