@@ -532,19 +532,72 @@ jobs:
             PG_USER="${POSTGRES_USER:-postgres}"
             echo "Using PostgreSQL user: $PG_USER"
             
-            # Login to GitHub Container Registry (use sudo for docker commands)
-            echo "${{ secrets.GITHUB_TOKEN }}" | sudo docker login ghcr.io -u ${{ github.actor }} --password-stdin
+            # Function to retry commands
+            retry_command() {
+              local max_attempts=3
+              local attempt=1
+              local delay=10
+              
+              while [ $attempt -le $max_attempts ]; do
+                echo "Attempt $attempt/$max_attempts: $*"
+                if "$@"; then
+                  return 0
+                fi
+                
+                if [ $attempt -lt $max_attempts ]; then
+                  echo "Command failed, waiting ${delay}s before retry..."
+                  sleep $delay
+                  delay=$((delay * 2))
+                fi
+                attempt=$((attempt + 1))
+              done
+              
+              echo "Command failed after $max_attempts attempts"
+              return 1
+            }
+            
+            # Login to GitHub Container Registry with retry (use sudo for docker commands)
+            echo "Logging into GitHub Container Registry..."
+            echo "${{ secrets.GITHUB_TOKEN }}" | retry_command sudo docker login ghcr.io -u ${{ github.actor }} --password-stdin || {
+              echo "Warning: Failed to login to GHCR after retries. Deployment may use cached images."
+            }
             
             # Stop and remove old containers (keep volumes)
             sudo docker compose -f docker-compose.prod.yml down || true
             
             # Pull only application images from GHCR (infrastructure images will be pulled when starting)
             echo "Pulling application images from GitHub Container Registry..."
-            sudo docker pull ghcr.io/${GITHUB_REPOSITORY}/auth-service:latest || echo "Failed to pull auth-service"
-            sudo docker pull ghcr.io/${GITHUB_REPOSITORY}/product-service:latest || echo "Failed to pull product-service"
-            sudo docker pull ghcr.io/${GITHUB_REPOSITORY}/order-service:latest || echo "Failed to pull order-service"
-            sudo docker pull ghcr.io/${GITHUB_REPOSITORY}/notification-service:latest || echo "Failed to pull notification-service"
-            sudo docker pull ghcr.io/${GITHUB_REPOSITORY}/notification-worker:latest || echo "Failed to pull notification-worker"
+            
+            # Skip pulls if network is having issues - will use existing images or pull during compose up
+            if retry_command sudo docker pull ghcr.io/${GITHUB_REPOSITORY}/auth-service:latest; then
+              echo "✓ auth-service image updated"
+            else
+              echo "⚠ Using existing auth-service image (pull failed)"
+            fi
+            
+            if retry_command sudo docker pull ghcr.io/${GITHUB_REPOSITORY}/product-service:latest; then
+              echo "✓ product-service image updated"
+            else
+              echo "⚠ Using existing product-service image (pull failed)"
+            fi
+            
+            if retry_command sudo docker pull ghcr.io/${GITHUB_REPOSITORY}/order-service:latest; then
+              echo "✓ order-service image updated"
+            else
+              echo "⚠ Using existing order-service image (pull failed)"
+            fi
+            
+            if retry_command sudo docker pull ghcr.io/${GITHUB_REPOSITORY}/notification-service:latest; then
+              echo "✓ notification-service image updated"
+            else
+              echo "⚠ Using existing notification-service image (pull failed)"
+            fi
+            
+            if retry_command sudo docker pull ghcr.io/${GITHUB_REPOSITORY}/notification-worker:latest; then
+              echo "✓ notification-worker image updated"
+            else
+              echo "⚠ Using existing notification-worker image (pull failed)"
+            fi
             
             # Start infrastructure services first
             sudo docker compose -f docker-compose.prod.yml up -d postgres mongodb redis rabbitmq
