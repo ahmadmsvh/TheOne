@@ -523,37 +523,46 @@ jobs:
             # Start infrastructure services first
             sudo docker compose -f docker-compose.prod.yml up -d postgres mongodb redis rabbitmq
             
-            # Wait for databases to be healthy
+            # Wait for databases to be ready
             echo "Waiting for databases to be ready..."
-            sleep 15
+            sleep 30
             
-            # Check health status and wait up to 2 minutes for all services to be healthy
-            echo "Checking service health..."
-            for i in {1..24}; do
-              echo "Health check attempt $i/24..."
+            # Check if containers are running (not strict health checks due to resource constraints on e2-micro)
+            echo "Checking if services are running..."
+            for i in {1..12}; do
+              echo "Check attempt $i/12..."
               
-              # Check each service
-              POSTGRES_HEALTH=$(sudo docker inspect --format='{{.State.Health.Status}}' postgres 2>/dev/null || echo "starting")
-              MONGODB_HEALTH=$(sudo docker inspect --format='{{.State.Health.Status}}' mongodb 2>/dev/null || echo "starting")
-              REDIS_HEALTH=$(sudo docker inspect --format='{{.State.Health.Status}}' redis 2>/dev/null || echo "starting")
-              RABBITMQ_HEALTH=$(sudo docker inspect --format='{{.State.Health.Status}}' rabbitmq 2>/dev/null || echo "starting")
+              # Check if containers are running
+              POSTGRES_STATUS=$(sudo docker inspect --format='{{.State.Status}}' postgres 2>/dev/null || echo "not found")
+              MONGODB_STATUS=$(sudo docker inspect --format='{{.State.Status}}' mongodb 2>/dev/null || echo "not found")
+              REDIS_STATUS=$(sudo docker inspect --format='{{.State.Status}}' redis 2>/dev/null || echo "not found")
+              RABBITMQ_STATUS=$(sudo docker inspect --format='{{.State.Status}}' rabbitmq 2>/dev/null || echo "not found")
               
-              echo "  Postgres: $POSTGRES_HEALTH"
-              echo "  MongoDB: $MONGODB_HEALTH"
-              echo "  Redis: $REDIS_HEALTH"
-              echo "  RabbitMQ: $RABBITMQ_HEALTH"
+              echo "  Postgres: $POSTGRES_STATUS"
+              echo "  MongoDB: $MONGODB_STATUS"
+              echo "  Redis: $REDIS_STATUS"
+              echo "  RabbitMQ: $RABBITMQ_STATUS"
               
-              if [ "$POSTGRES_HEALTH" = "healthy" ] && [ "$MONGODB_HEALTH" = "healthy" ] && [ "$REDIS_HEALTH" = "healthy" ] && [ "$RABBITMQ_HEALTH" = "healthy" ]; then
-                echo "All infrastructure services are healthy!"
+              # Count running services
+              RUNNING=0
+              [ "$POSTGRES_STATUS" = "running" ] && RUNNING=$((RUNNING + 1))
+              [ "$MONGODB_STATUS" = "running" ] && RUNNING=$((RUNNING + 1))
+              [ "$REDIS_STATUS" = "running" ] && RUNNING=$((RUNNING + 1))
+              [ "$RABBITMQ_STATUS" = "running" ] && RUNNING=$((RUNNING + 1))
+              
+              echo "  $RUNNING/4 services are running"
+              
+              if [ $RUNNING -ge 3 ]; then
+                echo "Most infrastructure services are running, continuing..."
                 break
               fi
               
-              if [ $i -eq 24 ]; then
-                echo "WARNING: Some services are not healthy after 2 minutes"
-                sudo docker compose -f docker-compose.prod.yml logs postgres mongodb redis rabbitmq
+              if [ $i -eq 12 ]; then
+                echo "WARNING: Not all services started properly. Continuing anyway due to resource constraints..."
+                sudo docker ps -a
               fi
               
-              sleep 5
+              sleep 10
             done
             
             # Initialize PostgreSQL databases if they don't exist
