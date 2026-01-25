@@ -495,6 +495,11 @@ jobs:
             
             cd ~/theone
             
+            # Load environment variables from .env file
+            if [ -f .env ]; then
+              export $(grep -v '^#' .env | xargs)
+            fi
+            
             # Login to GitHub Container Registry (use sudo for docker commands)
             echo "${{ secrets.GITHUB_TOKEN }}" | sudo docker login ghcr.io -u ${{ github.actor }} --password-stdin
             
@@ -512,11 +517,11 @@ jobs:
             sleep 20
             
             # Initialize PostgreSQL databases if they don't exist
-            sudo docker exec postgres psql -U $POSTGRES_USER -tc "SELECT 1 FROM pg_database WHERE datname = 'theone_auth_db'" | grep -q 1 || \
-              sudo docker exec postgres psql -U $POSTGRES_USER -c "CREATE DATABASE theone_auth_db;"
+            sudo docker exec postgres psql -U ${POSTGRES_USER} -tc "SELECT 1 FROM pg_database WHERE datname = 'theone_auth_db'" | grep -q 1 || \
+              sudo docker exec postgres psql -U ${POSTGRES_USER} -c "CREATE DATABASE theone_auth_db;"
             
-            sudo docker exec postgres psql -U $POSTGRES_USER -tc "SELECT 1 FROM pg_database WHERE datname = 'theone_order_db'" | grep -q 1 || \
-              sudo docker exec postgres psql -U $POSTGRES_USER -c "CREATE DATABASE theone_order_db;"
+            sudo docker exec postgres psql -U ${POSTGRES_USER} -tc "SELECT 1 FROM pg_database WHERE datname = 'theone_order_db'" | grep -q 1 || \
+              sudo docker exec postgres psql -U ${POSTGRES_USER} -c "CREATE DATABASE theone_order_db;"
             
             echo "Databases initialized successfully"
             
