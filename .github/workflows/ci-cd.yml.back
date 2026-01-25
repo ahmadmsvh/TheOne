@@ -41,6 +41,32 @@ jobs:
           --health-retries 5
         ports:
           - 6379:6379
+      
+      rabbitmq:
+        image: rabbitmq:3-management-alpine
+        env:
+          RABBITMQ_DEFAULT_USER: admin
+          RABBITMQ_DEFAULT_PASS: admin
+        options: >-
+          --health-cmd "rabbitmq-diagnostics ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5672:5672
+      
+      mongodb:
+        image: mongo:7
+        env:
+          MONGO_INITDB_ROOT_USERNAME: admin
+          MONGO_INITDB_ROOT_PASSWORD: admin
+        options: >-
+          --health-cmd "mongosh --eval 'db.adminCommand(\"ping\")'"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 27017:27017
 
     steps:
       - name: Checkout code
@@ -60,6 +86,9 @@ jobs:
       - name: Install service dependencies
         run: |
           pip install -r auth-service/requirements.txt -r auth-service/requirements-dev.txt
+          pip install -r order-service/requirements.txt -r order-service/requirements-dev.txt
+          pip install -r product-service/requirements.txt -r product-service/requirements-dev.txt
+          pip install -r notification-service/requirements.txt -r notification-service/requirements-dev.txt
 
       - name: Install PostgreSQL client
         run: |
@@ -93,6 +122,94 @@ jobs:
           PGPASSWORD=postgres psql -h localhost -U postgres -c "CREATE DATABASE theone_auth_db;" || true
           # Run migrations
           alembic upgrade head || true
+          # Run tests
+          pytest
+
+      - name: Run order-service tests
+        working-directory: ./order-service
+        env:
+          APP_NAME: TheOne
+          ENVIRONMENT: test
+          DEBUG: "false"
+          LOG_LEVEL: INFO
+          SERVICE_NAME: order-service
+          JSON_OUTPUT: "false"
+          LOG_FILE: ""
+          JWT_SECRET_KEY: your-secret-key-change-in-test
+          JWT_ALGORITHM: HS256
+          ACCESS_TOKEN_EXPIRE_MINUTES: 30
+          REFRESH_TOKEN_EXPIRE_DAYS: 7
+          POSTGRES_ORDER_URL: postgresql://postgres:postgres@localhost:5432/theone_order_db
+          POSTGRES_ORDER_POOL_SIZE: 5
+          POSTGRES_ORDER_MAX_OVERFLOW: 10
+          POSTGRES_ORDER_POOL_TIMEOUT: 30
+          REDIS_URL: redis://localhost:6379
+          REDIS_DECODE_RESPONSES: "true"
+          REDIS_SOCKET_TIMEOUT: 5
+          REDIS_SOCKET_CONNECT_TIMEOUT: 5
+          RABBITMQ_URL: amqp://admin:admin@localhost:5672/
+          RABBITMQ_EXCHANGE: ecommerce.events
+          RABBITMQ_QUEUE_PREFIX: theone
+          RABBITMQ_PREFETCH_COUNT: 10
+        run: |
+          # Create test database
+          PGPASSWORD=postgres psql -h localhost -U postgres -c "CREATE DATABASE theone_order_db;" || true
+          # Run migrations
+          alembic upgrade head || true
+          # Run tests
+          pytest
+
+      - name: Run product-service tests
+        working-directory: ./product-service
+        env:
+          APP_NAME: TheOne
+          ENVIRONMENT: test
+          DEBUG: "false"
+          LOG_LEVEL: INFO
+          SERVICE_NAME: product-service
+          JSON_OUTPUT: "false"
+          LOG_FILE: ""
+          JWT_SECRET_KEY: your-secret-key-change-in-test
+          JWT_ALGORITHM: HS256
+          ACCESS_TOKEN_EXPIRE_MINUTES: 30
+          REFRESH_TOKEN_EXPIRE_DAYS: 7
+          MONGODB_URL: mongodb://admin:admin@localhost:27017/theone_db?authSource=admin
+          MONGODB_DATABASE: theone_db
+          REDIS_URL: redis://localhost:6379
+          REDIS_DECODE_RESPONSES: "true"
+          REDIS_SOCKET_TIMEOUT: 5
+          REDIS_SOCKET_CONNECT_TIMEOUT: 5
+          RABBITMQ_URL: amqp://admin:admin@localhost:5672/
+          RABBITMQ_EXCHANGE: ecommerce.events
+          RABBITMQ_QUEUE_PREFIX: theone
+          RABBITMQ_PREFETCH_COUNT: 10
+        run: |
+          # Run tests
+          pytest
+
+      - name: Run notification-service tests
+        working-directory: ./notification-service
+        env:
+          APP_NAME: TheOne
+          ENVIRONMENT: test
+          DEBUG: "false"
+          LOG_LEVEL: INFO
+          SERVICE_NAME: notification-service
+          JSON_OUTPUT: "false"
+          LOG_FILE: ""
+          JWT_SECRET_KEY: your-secret-key-change-in-test
+          JWT_ALGORITHM: HS256
+          ACCESS_TOKEN_EXPIRE_MINUTES: 30
+          REFRESH_TOKEN_EXPIRE_DAYS: 7
+          REDIS_URL: redis://localhost:6379
+          REDIS_DECODE_RESPONSES: "true"
+          REDIS_SOCKET_TIMEOUT: 5
+          REDIS_SOCKET_CONNECT_TIMEOUT: 5
+          RABBITMQ_URL: amqp://admin:admin@localhost:5672/
+          RABBITMQ_EXCHANGE: ecommerce.events
+          RABBITMQ_QUEUE_PREFIX: notification-service
+          RABBITMQ_PREFETCH_COUNT: 10
+        run: |
           # Run tests
           pytest
 
@@ -234,16 +351,16 @@ jobs:
 
       - name: Check code formatting with black
         run: |
-          black --check --diff auth-service/ shared/ || true
+          black --check --diff auth-service/ order-service/ product-service/ notification-service/ shared/ || true
 
       - name: Check import sorting with isort
         run: |
-          isort --check-only --diff auth-service/ shared/ || true
+          isort --check-only --diff auth-service/ order-service/ product-service/ notification-service/ shared/ || true
 
       - name: Lint with flake8
         run: |
-          flake8 auth-service/ shared/ --count --select=E9,F63,F7,F82 --show-source --statistics || true
-          flake8 auth-service/ shared/ --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics || true
+          flake8 auth-service/ order-service/ product-service/ notification-service/ shared/ --count --select=E9,F63,F7,F82 --show-source --statistics || true
+          flake8 auth-service/ order-service/ product-service/ notification-service/ shared/ --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics || true
 
   deploy:
     name: Deploy to Production (GCP e2-micro)
@@ -307,9 +424,19 @@ jobs:
           POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD }}
           POSTGRES_DB=postgres
           POSTGRES_AUTH_DB=theone_auth_db
+          POSTGRES_ORDER_DB=theone_order_db
+          
+          # MongoDB Configuration
+          MONGO_ROOT_USERNAME=${{ secrets.MONGO_ROOT_USERNAME }}
+          MONGO_ROOT_PASSWORD=${{ secrets.MONGO_ROOT_PASSWORD }}
+          MONGODB_DATABASE=theone_db
           
           # Redis Configuration
           REDIS_PASSWORD=${{ secrets.REDIS_PASSWORD }}
+          
+          # RabbitMQ Configuration
+          RABBITMQ_USER=${{ secrets.RABBITMQ_USER }}
+          RABBITMQ_PASSWORD=${{ secrets.RABBITMQ_PASSWORD }}
           EOF
 
       - name: Copy files to server
@@ -448,8 +575,32 @@ jobs:
               echo "⚠ Using existing auth-service image (pull failed)"
             fi
             
+            if retry_command sudo docker pull ghcr.io/${GITHUB_REPOSITORY}/product-service:latest; then
+              echo "✓ product-service image updated"
+            else
+              echo "⚠ Using existing product-service image (pull failed)"
+            fi
+            
+            if retry_command sudo docker pull ghcr.io/${GITHUB_REPOSITORY}/order-service:latest; then
+              echo "✓ order-service image updated"
+            else
+              echo "⚠ Using existing order-service image (pull failed)"
+            fi
+            
+            if retry_command sudo docker pull ghcr.io/${GITHUB_REPOSITORY}/notification-service:latest; then
+              echo "✓ notification-service image updated"
+            else
+              echo "⚠ Using existing notification-service image (pull failed)"
+            fi
+            
+            if retry_command sudo docker pull ghcr.io/${GITHUB_REPOSITORY}/notification-worker:latest; then
+              echo "✓ notification-worker image updated"
+            else
+              echo "⚠ Using existing notification-worker image (pull failed)"
+            fi
+            
             # Start infrastructure services first
-            sudo docker compose -f docker-compose.prod.yml up -d postgres redis
+            sudo docker compose -f docker-compose.prod.yml up -d postgres mongodb redis rabbitmq
             
             # Wait for databases to be ready
             echo "Waiting for databases to be ready..."
@@ -462,20 +613,26 @@ jobs:
               
               # Check if containers are running
               POSTGRES_STATUS=$(sudo docker inspect --format='{{.State.Status}}' postgres 2>/dev/null || echo "not found")
+              MONGODB_STATUS=$(sudo docker inspect --format='{{.State.Status}}' mongodb 2>/dev/null || echo "not found")
               REDIS_STATUS=$(sudo docker inspect --format='{{.State.Status}}' redis 2>/dev/null || echo "not found")
+              RABBITMQ_STATUS=$(sudo docker inspect --format='{{.State.Status}}' rabbitmq 2>/dev/null || echo "not found")
               
               echo "  Postgres: $POSTGRES_STATUS"
+              echo "  MongoDB: $MONGODB_STATUS"
               echo "  Redis: $REDIS_STATUS"
+              echo "  RabbitMQ: $RABBITMQ_STATUS"
               
               # Count running services
               RUNNING=0
               [ "$POSTGRES_STATUS" = "running" ] && RUNNING=$((RUNNING + 1))
+              [ "$MONGODB_STATUS" = "running" ] && RUNNING=$((RUNNING + 1))
               [ "$REDIS_STATUS" = "running" ] && RUNNING=$((RUNNING + 1))
+              [ "$RABBITMQ_STATUS" = "running" ] && RUNNING=$((RUNNING + 1))
               
-              echo "  $RUNNING/2 services are running"
+              echo "  $RUNNING/4 services are running"
               
-              if [ $RUNNING -eq 2 ]; then
-                echo "All infrastructure services are running, continuing..."
+              if [ $RUNNING -ge 3 ]; then
+                echo "Most infrastructure services are running, continuing..."
                 break
               fi
               
@@ -491,10 +648,13 @@ jobs:
             sudo docker exec postgres psql -U "$PG_USER" -tc "SELECT 1 FROM pg_database WHERE datname = 'theone_auth_db'" | grep -q 1 || \
               sudo docker exec postgres psql -U "$PG_USER" -c "CREATE DATABASE theone_auth_db;"
             
-            echo "Database initialized successfully"
+            sudo docker exec postgres psql -U "$PG_USER" -tc "SELECT 1 FROM pg_database WHERE datname = 'theone_order_db'" | grep -q 1 || \
+              sudo docker exec postgres psql -U "$PG_USER" -c "CREATE DATABASE theone_order_db;"
+            
+            echo "Databases initialized successfully"
             
             # Start application services
-            sudo docker compose -f docker-compose.prod.yml up -d auth-service
+            sudo docker compose -f docker-compose.prod.yml up -d auth-service product-service order-service notification-service notification-worker
             
             # Wait for services to be ready
             echo "Waiting for services to be ready..."
@@ -504,9 +664,16 @@ jobs:
             echo "Running auth-service migrations..."
             sudo docker exec auth-service alembic upgrade head || echo "Migration failed or already applied"
             
+            # Run database migrations for order-service
+            echo "Running order-service migrations..."
+            sudo docker exec order-service alembic upgrade head || echo "Migration failed or already applied"
+            
             # Seed initial data for auth-service (roles)
             echo "Seeding auth-service roles..."
             sudo docker exec auth-service python scripts/seed_roles.py || echo "Seeding failed or already done"
+            
+            # Start nginx
+            sudo docker compose -f docker-compose.prod.yml up -d nginx
             
             # Clean up old images
             sudo docker image prune -af --filter "until=24h" || true
@@ -532,8 +699,15 @@ jobs:
             echo "=== Container Status ==="
             sudo docker compose -f docker-compose.prod.yml ps
             
+            echo -e "\n=== Health Check ==="
+            curl -f http://localhost/health || exit 1
+            echo "✓ Health check passed"
+            
             echo -e "\n=== Service Logs (last 20 lines) ==="
             sudo docker compose -f docker-compose.prod.yml logs --tail=20 auth-service
+            sudo docker compose -f docker-compose.prod.yml logs --tail=20 product-service
+            sudo docker compose -f docker-compose.prod.yml logs --tail=20 order-service
+            sudo docker compose -f docker-compose.prod.yml logs --tail=20 notification-service
             
             echo -e "\n=== Deployment verified successfully! ==="
           EOF
