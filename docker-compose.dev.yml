@@ -115,8 +115,8 @@ services:
       - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/theone_auth_db
       - REDIS_URL=redis://redis:6379
       - GOOGLE_APPLICATION_CREDENTIALS=/app/shared/shared/theone-35860-3d9030db5a46.json
-      - GCP_PROJECT_ID=theone-35860
-      - GCP_SECRET_NAMES=theone_secrets
+      - GCP_PROJECT_ID=theone-wee-16
+      - GCP_SECRET_NAMES=theone-secrest
       - GCP_SECRET_PREFIX=
       - USE_GCP_SECRETS=true
     depends_on:
@@ -146,8 +146,8 @@ services:
       - RABBITMQ_PREFETCH_COUNT=10
       - REDIS_URL=redis://redis:6379
       - GOOGLE_APPLICATION_CREDENTIALS=/app/shared/shared/theone-35860-3d9030db5a46.json
-      - GCP_PROJECT_ID=theone-35860
-      - GCP_SECRET_NAMES=theone_secrets
+      - GCP_PROJECT_ID=theone-wee-16
+      - GCP_SECRET_NAMES=theone-secrest
       - GCP_SECRET_PREFIX=
       - USE_GCP_SECRETS=true
     depends_on:
@@ -175,8 +175,8 @@ services:
       - RABBITMQ_PREFETCH_COUNT=10
       - REDIS_URL=redis://redis:6379
       - GOOGLE_APPLICATION_CREDENTIALS=/app/shared/shared/theone-35860-3d9030db5a46.json
-      - GCP_PROJECT_ID=theone-35860
-      - GCP_SECRET_NAMES=theone_secrets
+      - GCP_PROJECT_ID=theone-wee-16
+      - GCP_SECRET_NAMES=theone-secrest
       - GCP_SECRET_PREFIX=
       - USE_GCP_SECRETS=true
     depends_on:
@@ -207,8 +207,8 @@ services:
       - MONGODB_DATABASE=theone_db
       - REDIS_URL=redis://redis:6379
       - GOOGLE_APPLICATION_CREDENTIALS=/app/shared/shared/theone-35860-3d9030db5a46.json
-      - GCP_PROJECT_ID=theone-35860
-      - GCP_SECRET_NAMES=theone_secrets
+      - GCP_PROJECT_ID=theone-wee-16
+      - GCP_SECRET_NAMES=theone-secrest
       - GCP_SECRET_PREFIX=
       - USE_GCP_SECRETS=true
       # - RABBITMQ_URL=amqp://admin:admin@rabbitmq:5672/
@@ -244,8 +244,8 @@ services:
       - RABBITMQ_URL=amqp://admin:admin@rabbitmq:5672/
       - REDIS_URL=redis://redis:6379
       - GOOGLE_APPLICATION_CREDENTIALS=/app/shared/shared/theone-35860-3d9030db5a46.json
-      - GCP_PROJECT_ID=theone-35860
-      - GCP_SECRET_NAMES=theone_secrets
+      - GCP_PROJECT_ID=theone-wee-16
+      - GCP_SECRET_NAMES=theone-secrest 
       - GCP_SECRET_PREFIX=
       - USE_GCP_SECRETS=true
     depends_on:
